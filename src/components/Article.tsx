@@ -1,5 +1,4 @@
 import React from 'react';
-import dayjs from 'dayjs';
 import {TouchableWithoutFeedback} from 'react-native';
 
 import Text from './Text';
@@ -69,7 +68,13 @@ const Article = ({
                 </Text>
                 <Text p gray>
                   {t('common.posted', {
-                    date: dayjs(timestamp).format('DD MMMM') || '-',
+                    date:
+                      timestamp
+                        ? new Date(timestamp).toLocaleDateString('it-IT', {
+                            day: '2-digit',
+                            month: 'long',
+                          })
+                        : '-',
                   })}
                 </Text>
               </Block>

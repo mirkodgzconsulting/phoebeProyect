@@ -5,7 +5,7 @@ import {ITheme, IThemeProvider} from '../constants/types';
 
 export const ThemeContext = React.createContext({
   theme: light,
-  setTheme: () => {},
+  setTheme: (() => {}) as React.Dispatch<React.SetStateAction<ITheme>>,
 });
 
 export const ThemeProvider = ({
@@ -14,7 +14,8 @@ export const ThemeProvider = ({
   setTheme = () => {},
 }: IThemeProvider) => {
   return (
-    <ThemeContext.Provider value={{theme, setTheme}}>
+    <ThemeContext.Provider
+      value={{theme, setTheme: setTheme as React.Dispatch<React.SetStateAction<ITheme>>}}>
       {children}
     </ThemeContext.Provider>
   );

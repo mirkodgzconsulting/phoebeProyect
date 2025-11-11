@@ -2,131 +2,295 @@ import React, {useCallback, useContext, useEffect, useState} from 'react';
 import Storage from '@react-native-async-storage/async-storage';
 
 import {
-  IArticle,
-  ICategory,
-  IProduct,
   IUser,
   IUseData,
   ITheme,
+  IDashboardData,
+  IPracticeSessionData,
+  IProgressOverviewData,
+  IUserPreferences,
 } from '../constants/types';
 
 import {
   USERS,
-  FOLLOWING,
-  TRENDING,
-  CATEGORIES,
-  ARTICLES,
+  DASHBOARD_DATA,
+  PRACTICE_SESSION_DATA,
+  PROGRESS_OVERVIEW_DATA,
+  USER_PREFERENCES,
 } from '../constants/mocks';
+import {
+  fetchDashboard,
+  fetchPracticeSession,
+  fetchProgressOverview,
+  fetchPreferences,
+  updatePreferencesService,
+} from '../services';
 import {light} from '../constants';
+import {
+  ensureProfile,
+  getCurrentAuthUser,
+  signInWithEmail,
+  signOutFromSupabase,
+  signUpWithEmail,
+  startTrialForUser,
+} from '../services/supabaseAuth';
+import {supabase} from '../lib/supabaseClient';
 
 export const DataContext = React.createContext({});
+
+const DEFAULT_USER: IUser = {
+  ...USERS[0],
+};
 
 export const DataProvider = ({children}: {children: React.ReactNode}) => {
   const [isDark, setIsDark] = useState(false);
   const [theme, setTheme] = useState<ITheme>(light);
-  const [user, setUser] = useState<IUser>(USERS[0]);
-  const [users, setUsers] = useState<IUser[]>(USERS);
-  const [following, setFollowing] = useState<IProduct[]>(FOLLOWING);
-  const [trending, setTrending] = useState<IProduct[]>(TRENDING);
-  const [categories, setCategories] = useState<ICategory[]>(CATEGORIES);
-  const [articles, setArticles] = useState<IArticle[]>(ARTICLES);
-  const [article, setArticle] = useState<IArticle>({});
+  const [user, setUserState] = useState<IUser>(DEFAULT_USER);
+  const [dashboard, setDashboard] = useState<IDashboardData>(DASHBOARD_DATA);
+  const [practice, setPractice] = useState<IPracticeSessionData>(
+    PRACTICE_SESSION_DATA,
+  );
+  const [progress, setProgress] = useState<IProgressOverviewData>(
+    PROGRESS_OVERVIEW_DATA,
+  );
+  const [preferences, setPreferences] = useState<IUserPreferences>(
+    USER_PREFERENCES,
+  );
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-
-  const signIn = useCallback(() => setIsAuthenticated(true), []);
-  const signOut = useCallback(() => setIsAuthenticated(false), []);
+  const [hasActiveTrial, setHasActiveTrial] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const completeOnboarding = useCallback(() => setHasOnboarded(true), []);
+
+  const setUser = useCallback(
+    (payload: Partial<IUser>) => {
+      setUserState(prev => ({...prev, ...payload}));
+    },
+    [],
+  );
+
+  const updatePreferences = useCallback(
+    async (payload: Partial<IUserPreferences>) => {
+      const updated = await updatePreferencesService(payload);
+      setPreferences(updated);
+    },
+    [],
+  );
 
   // get isDark mode from storage
   const getIsDark = useCallback(async () => {
-    // get preferance gtom storage
     const isDarkJSON = await Storage.getItem('isDark');
 
     if (isDarkJSON !== null) {
-      // set isDark / compare if has updated
       setIsDark(JSON.parse(isDarkJSON));
     }
   }, [setIsDark]);
 
-  // handle isDark mode
   const handleIsDark = useCallback(
     (payload: boolean) => {
-      // set isDark / compare if has updated
       setIsDark(payload);
-      // save preferance to storage
       Storage.setItem('isDark', JSON.stringify(payload));
     },
     [setIsDark],
   );
 
-  // handle users / profiles
-  const handleUsers = useCallback(
-    (payload: IUser[]) => {
-      // set users / compare if has updated
-      if (JSON.stringify(payload) !== JSON.stringify(users)) {
-        setUsers({...users, ...payload});
-      }
-    },
-    [users, setUsers],
-  );
-
-  // handle user
-  const handleUser = useCallback(
-    (payload: IUser) => {
-      // set user / compare if has updated
-      if (JSON.stringify(payload) !== JSON.stringify(user)) {
-        setUser(payload);
-      }
-    },
-    [user, setUser],
-  );
-
-  // handle Article
-  const handleArticle = useCallback(
-    (payload: IArticle) => {
-      // set article / compare if has updated
-      if (JSON.stringify(payload) !== JSON.stringify(article)) {
-        setArticle(payload);
-      }
-    },
-    [article, setArticle],
-  );
-
-  // get initial data for: isDark & language
   useEffect(() => {
     getIsDark();
   }, [getIsDark]);
 
-  // change theme based on isDark updates
   useEffect(() => {
-    setTheme(isDark ? light : light);
+    setTheme(light);
   }, [isDark]);
 
-  const contextValue = {
+  useEffect(() => {
+    const loadData = async () => {
+      const [dashboardData, practiceData, progressData, preferenceData] =
+        await Promise.all([
+          fetchDashboard(),
+          fetchPracticeSession(),
+          fetchProgressOverview(),
+          fetchPreferences(),
+        ]);
+      setDashboard(dashboardData);
+      setPractice(practiceData);
+      setProgress(progressData);
+      setPreferences(preferenceData);
+    };
+
+    loadData();
+  }, []);
+
+  const syncProfile = useCallback(
+    async (authUser: {id: string; email?: string | null; user_metadata?: Record<string, unknown>}) => {
+      if (!supabase) {
+        return;
+      }
+
+      setIsProfileLoading(true);
+      try {
+        const profile = await ensureProfile(authUser.id, {
+          id: authUser.id,
+          full_name:
+            (authUser.user_metadata?.full_name as string | undefined) ??
+            authUser.email ??
+            DEFAULT_USER.name ??
+            'Alumno',
+        });
+
+        setUserState(prev => ({
+          ...prev,
+          id: authUser.id,
+          name:
+            profile?.full_name ??
+            authUser.email ??
+            prev.name ??
+            DEFAULT_USER.name ??
+            'Alumno Feliz Viaje',
+          department: profile?.level ?? prev.department,
+        }));
+
+        setHasActiveTrial(Boolean(profile?.has_premium));
+      } finally {
+        setIsProfileLoading(false);
+      }
+    },
+    [],
+  );
+
+  const refreshProfile = useCallback(async () => {
+    const authUser = await getCurrentAuthUser();
+    if (authUser) {
+      await syncProfile(authUser);
+      setIsAuthenticated(true);
+    }
+  }, [syncProfile]);
+
+  useEffect(() => {
+    if (!supabase) {
+      return;
+    }
+
+    let mounted = true;
+
+    supabase.auth.getSession().then(async ({data}) => {
+      if (!mounted) {
+        return;
+      }
+
+      const authUser = data.session?.user;
+      if (authUser) {
+        setIsAuthenticated(true);
+        await syncProfile(authUser);
+      } else {
+        setIsAuthenticated(false);
+        setHasActiveTrial(false);
+        setUserState(DEFAULT_USER);
+      }
+    });
+
+    const {data: subscription} = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (!mounted) {
+          return;
+        }
+
+        if (session?.user) {
+          setIsAuthenticated(true);
+          await syncProfile(session.user);
+        } else {
+          setIsAuthenticated(false);
+          setHasActiveTrial(false);
+          setUserState(DEFAULT_USER);
+        }
+      },
+    );
+
+    return () => {
+      mounted = false;
+      subscription?.subscription.unsubscribe();
+    };
+  }, [syncProfile]);
+
+  const signIn = useCallback(
+    async ({email, password}: {email: string; password: string}) => {
+      const authUser = await signInWithEmail({email, password});
+      setIsAuthenticated(true);
+      await syncProfile(authUser);
+    },
+    [syncProfile],
+  );
+
+  const signUp = useCallback(
+    async ({
+      email,
+      password,
+      fullName,
+    }: {
+      email: string;
+      password: string;
+      fullName: string;
+    }) => {
+      const {
+        user: authUser,
+        requiresEmailConfirmation,
+      } = await signUpWithEmail({email, password, fullName});
+
+      if (requiresEmailConfirmation) {
+        setIsAuthenticated(false);
+        setHasActiveTrial(false);
+        setUserState(DEFAULT_USER);
+        return 'confirmation_required';
+      }
+
+      setIsAuthenticated(true);
+      await syncProfile(authUser);
+      return 'signed_in';
+    },
+    [syncProfile],
+  );
+
+  const signOut = useCallback(async () => {
+    await signOutFromSupabase();
+    setIsAuthenticated(false);
+    setHasActiveTrial(false);
+    setUserState(DEFAULT_USER);
+  }, []);
+
+  const activateTrial = useCallback(async () => {
+    const authUser = await getCurrentAuthUser();
+    if (!authUser) {
+      throw new Error('Debes iniciar sesión para activar la prueba gratuita.');
+    }
+    await startTrialForUser(authUser.id);
+    setHasActiveTrial(true);
+    await syncProfile(authUser);
+  }, [syncProfile]);
+
+  const contextValue: IUseData = {
     isDark,
     handleIsDark,
     theme,
     setTheme,
     isAuthenticated,
     hasOnboarded,
+    hasActiveTrial,
+    isProfileLoading,
     signIn,
+    signUp,
     signOut,
+    activateTrial,
+    refreshProfile,
     completeOnboarding,
     user,
-    users,
-    handleUsers,
-    handleUser,
-    following,
-    setFollowing,
-    trending,
-    setTrending,
-    categories,
-    setCategories,
-    articles,
-    setArticles,
-    article,
-    handleArticle,
+    setUser,
+    dashboard,
+    setDashboard,
+    practice,
+    setPractice,
+    progress,
+    setProgress,
+    preferences,
+    updatePreferences,
   };
 
   return (

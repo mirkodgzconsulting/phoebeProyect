@@ -3,8 +3,7 @@ import {Platform, StyleSheet, View} from 'react-native';
 import {useNavigation} from '@react-navigation/core';
 import {LinearGradient} from 'expo-linear-gradient';
 
-import {useTheme, useTranslation} from '../hooks/';
-import * as regex from '../constants/regex';
+import {useData, useTheme, useTranslation} from '../hooks/';
 import {
   Block,
   Button,
@@ -32,6 +31,7 @@ interface IRegistrationValidation {
 
 const Register = () => {
   const {t} = useTranslation();
+  const {signUp} = useData();
   const navigation = useNavigation<any>();
   const [isValid, setIsValid] = useState<IRegistrationValidation>({
     name: false,
@@ -43,6 +43,9 @@ const Register = () => {
     email: '',
     password: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const {assets, colors, gradients, sizes} = useTheme();
   const primaryGradient = gradients?.primary ?? ['#0B3D4D', '#60CB58'];
 
@@ -53,29 +56,55 @@ const Register = () => {
     [setRegistration],
   );
 
-  const handleSignUp = useCallback(() => {
-    if (!Object.values(isValid).includes(false)) {
-      /** send/save registratin data */
-      console.log('handleSignUp', registration);
+  const handleSignUp = useCallback(async () => {
+    if (Object.values(isValid).includes(false)) {
+      return;
     }
-  }, [isValid, registration]);
+
+    setLoading(true);
+    setErrorMessage(null);
+    setInfoMessage(null);
+    try {
+      const result = await signUp({
+        email: registration.email,
+        password: registration.password,
+        fullName: registration.name,
+      });
+      if (result === 'confirmation_required') {
+        setInfoMessage(
+          'Revisa tu correo y confirma tu cuenta antes de iniciar sesión.',
+        );
+      } else {
+        navigation.replace('PremiumUpsell');
+      }
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear la cuenta. Inténtalo nuevamente.';
+      setErrorMessage(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [isValid, navigation, registration, signUp]);
 
   useEffect(() => {
-    setIsValid((state) => ({
-      ...state,
-      name: regex.name.test(registration.name),
-      email: regex.email.test(registration.email),
-      password: regex.password.test(registration.password),
-    }));
+    setIsValid({
+      name: registration.name.trim().length > 0,
+      email:
+        registration.email.trim().length > 0 &&
+        registration.email.includes('@'),
+      password: registration.password.trim().length > 0,
+    });
   }, [registration]);
 
   return (
     <BrandBackground>
-      <Block
-        keyboard
+        <Block
+          keyboard
         flex={1}
         color="transparent"
-        behavior={!isAndroid ? 'padding' : 'height'}
+          behavior={!isAndroid ? 'padding' : 'height'}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           flexGrow: 1,
@@ -99,58 +128,58 @@ const Register = () => {
               </View>
             </Block>
 
-            <Text p semibold center>
+              <Text p semibold center>
               <Text color="rgba(255,255,255,0.78)" size={sizes.p - 2}>
                 {t('register.subtitle')}
               </Text>
-            </Text>
+                </Text>
 
-            <Block paddingHorizontal={sizes.sm}>
+              <Block paddingHorizontal={sizes.sm}>
               <Text
                 semibold
                 color="rgba(255,255,255,0.85)"
                 marginBottom={sizes.xs}>
                 {t('common.name')}
               </Text>
-              <Input
-                autoCapitalize="none"
-                marginBottom={sizes.m}
-                placeholder={t('common.namePlaceholder')}
-                success={Boolean(registration.name && isValid.name)}
-                danger={Boolean(registration.name && !isValid.name)}
-                onChangeText={(value) => handleChange({name: value})}
-              />
+                <Input
+                  autoCapitalize="none"
+                  marginBottom={sizes.m}
+                  placeholder={t('common.namePlaceholder')}
+                  success={Boolean(registration.name && isValid.name)}
+                  danger={Boolean(registration.name && !isValid.name)}
+                  onChangeText={(value) => handleChange({name: value})}
+                />
               <Text
                 semibold
                 color="rgba(255,255,255,0.85)"
                 marginBottom={sizes.xs}>
                 {t('common.email')}
               </Text>
-              <Input
-                autoCapitalize="none"
-                marginBottom={sizes.m}
-                keyboardType="email-address"
-                placeholder={t('common.emailPlaceholder')}
-                success={Boolean(registration.email && isValid.email)}
-                danger={Boolean(registration.email && !isValid.email)}
-                onChangeText={(value) => handleChange({email: value})}
-              />
+                <Input
+                  autoCapitalize="none"
+                  marginBottom={sizes.m}
+                  keyboardType="email-address"
+                  placeholder={t('common.emailPlaceholder')}
+                  success={Boolean(registration.email && isValid.email)}
+                  danger={Boolean(registration.email && !isValid.email)}
+                  onChangeText={(value) => handleChange({email: value})}
+                />
               <Text
                 semibold
                 color="rgba(255,255,255,0.85)"
                 marginBottom={sizes.xs}>
                 {t('common.password')}
               </Text>
-              <Input
-                secureTextEntry
-                autoCapitalize="none"
-                marginBottom={sizes.m}
-                placeholder={t('common.passwordPlaceholder')}
-                onChangeText={(value) => handleChange({password: value})}
-                success={Boolean(registration.password && isValid.password)}
-                danger={Boolean(registration.password && !isValid.password)}
-              />
-            </Block>
+                <Input
+                  secureTextEntry
+                  autoCapitalize="none"
+                  marginBottom={sizes.m}
+                  placeholder={t('common.passwordPlaceholder')}
+                  onChangeText={(value) => handleChange({password: value})}
+                  success={Boolean(registration.password && isValid.password)}
+                  danger={Boolean(registration.password && !isValid.password)}
+                />
+              </Block>
 
             <Block
               row
@@ -158,12 +187,12 @@ const Register = () => {
               justify="center"
               marginTop={sizes.xs}
               marginBottom={sizes.xs}>
-              <Text
+                  <Text
                 size={sizes.p - 2}
                 color="rgba(255,255,255,0.7)"
                 marginRight={sizes.xs}>
                 {t('register.google')}
-              </Text>
+                </Text>
               <Button
                 round
                 outlined="rgba(255,255,255,0.35)"
@@ -182,19 +211,39 @@ const Register = () => {
               </Button>
             </Block>
 
+            {infoMessage ? (
+              <Text
+                center
+                color={colors.success ?? '#60CB58'}
+                size={sizes.p - 2}
+                marginBottom={sizes.xs}>
+                {infoMessage}
+              </Text>
+            ) : null}
+
+            {errorMessage ? (
+              <Text
+                center
+                color={colors.error ?? '#FF6B6B'}
+                size={sizes.p - 2}
+                marginBottom={sizes.xs}>
+                {errorMessage}
+              </Text>
+            ) : null}
+
             <BrandActionButton
-              label={t('common.signup')}
+              label={loading ? 'Creando cuenta...' : t('common.signup')}
               onPress={handleSignUp}
               gradient={primaryGradient}
-              disabled={Object.values(isValid).includes(false)}
+              disabled={loading || Object.values(isValid).includes(false)}
               style={{marginVertical: sizes.s, marginHorizontal: sizes.sm}}
             />
 
-            <Button
+              <Button
               outlined="rgba(255,255,255,0.35)"
               shadow={false}
-              marginVertical={sizes.s}
-              marginHorizontal={sizes.sm}
+                marginVertical={sizes.s}
+                marginHorizontal={sizes.sm}
               onPress={() => {
                 if (navigation.canGoBack()) {
                   navigation.goBack();
@@ -203,9 +252,9 @@ const Register = () => {
                 }
               }}>
               <Text bold white transform="uppercase">
-                {t('common.signin')}
-              </Text>
-            </Button>
+                  {t('common.signin')}
+                </Text>
+              </Button>
           </LinearGradient>
         </Block>
       </Block>

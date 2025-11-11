@@ -4,7 +4,6 @@ import {useNavigation} from '@react-navigation/core';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {useData, useTheme, useTranslation} from '../hooks/';
-import * as regex from '../constants/regex';
 import {
   Block,
   Button,
@@ -29,7 +28,7 @@ interface ICredentialsValidation {
 }
 
 const Login = () => {
-  const {isDark, signIn} = useData();
+  const {signIn} = useData();
   const {t} = useTranslation();
   const navigation = useNavigation<any>();
   const [isValid, setIsValid] = useState<ICredentialsValidation>({
@@ -40,6 +39,8 @@ const Login = () => {
     email: '',
     password: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const {assets, colors, gradients, sizes} = useTheme();
   const primaryGradient = gradients?.primary ?? ['#0B3D4D', '#60CB58'];
 
@@ -50,16 +51,33 @@ const Login = () => {
     [setCredentials],
   );
 
-  const handleSignIn = useCallback(() => {
-    if (!Object.values(isValid).includes(false)) {
-      signIn();
+  const handleSignIn = useCallback(async () => {
+    if (Object.values(isValid).includes(false)) {
+      return;
     }
-  }, [isValid, signIn]);
+
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      await signIn(credentials);
+      navigation.replace('PremiumUpsell');
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo iniciar sesión. Inténtalo nuevamente.';
+      setErrorMessage(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [credentials, isValid, navigation, signIn]);
 
   useEffect(() => {
     setIsValid({
-      email: regex.email.test(credentials.email),
-      password: regex.password.test(credentials.password),
+      email:
+        credentials.email.trim().length > 0 &&
+        credentials.email.includes('@'),
+      password: credentials.password.trim().length > 0,
     });
   }, [credentials]);
 
@@ -162,11 +180,21 @@ const Login = () => {
               </Button>
             </Block>
 
+            {errorMessage ? (
+              <Text
+                center
+                color={colors.error ?? '#FF6B6B'}
+                size={sizes.p - 2}
+                marginBottom={sizes.xs}>
+                {errorMessage}
+              </Text>
+            ) : null}
+
             <BrandActionButton
-              label={t('common.signin')}
+              label={loading ? 'Iniciando...' : t('common.signin')}
               onPress={handleSignIn}
               gradient={primaryGradient}
-              disabled={Object.values(isValid).includes(false)}
+              disabled={loading || Object.values(isValid).includes(false)}
               style={{marginVertical: sizes.s, marginHorizontal: sizes.sm}}
             />
 

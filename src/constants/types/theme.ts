@@ -72,7 +72,7 @@ export interface ICommonTheme {
 export interface IThemeProvider {
   children?: React.ReactNode;
   theme?: ITheme;
-  setTheme?: (theme?: ITheme) => void;
+  setTheme?: React.Dispatch<React.SetStateAction<ITheme>>;
 }
 
 export interface ThemeColors {

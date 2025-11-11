@@ -67,7 +67,7 @@ const DrawerContent = (
   const {navigation} = props;
   const {t} = useTranslation();
   const {isDark, handleIsDark} = useData();
-  const [active, setActive] = useState('Home');
+  const [active, setActive] = useState('Dashboard');
   const {assets, colors, gradients, sizes} = useTheme();
   const labelColor = colors.text;
 
@@ -82,13 +82,11 @@ const DrawerContent = (
 
   // screen list for Drawer menu
   const screens = [
-    {name: t('screens.home'), to: 'Home', icon: assets.home},
-    {name: t('screens.components'), to: 'Components', icon: assets.components},
-    {name: t('screens.articles'), to: 'Articles', icon: assets.document},
-    {name: t('screens.rental'), to: 'Pro', icon: assets.rental},
-    {name: t('screens.profile'), to: 'Profile', icon: assets.profile},
-    {name: t('screens.settings'), to: 'Pro', icon: assets.settings},
-    {name: t('screens.extra'), to: 'Pro', icon: assets.extras},
+    {name: 'Dashboard', to: 'Dashboard', icon: assets.home},
+    {name: 'Sessione di pratica', to: 'PracticeSession', icon: assets.chat},
+    {name: 'Progressi', to: 'ProgressOverview', icon: assets.star},
+    {name: 'Profilo', to: 'Profile', icon: assets.profile},
+    {name: 'Impostazioni', to: 'SettingsScreen', icon: assets.settings},
   ];
 
   return (

@@ -10,6 +10,12 @@ import Article from './Article';
 import Product from './Product';
 import BrandBackground from './BrandBackground';
 import BrandActionButton from './BrandActionButton';
+import BrandSurface from './BrandSurface';
+import BrandSectionHeader from './BrandSectionHeader';
+import BrandChip from './BrandChip';
+import BrandProgressBar from './BrandProgressBar';
+import BrandLineChart from './BrandLineChart';
+import AssistantOrb from './AssistantOrb';
 
 export {
   Block,
@@ -24,4 +30,10 @@ export {
   Modal,
   BrandBackground,
   BrandActionButton,
+  BrandSurface,
+  BrandSectionHeader,
+  BrandChip,
+  BrandProgressBar,
+  BrandLineChart,
+  AssistantOrb,
 };

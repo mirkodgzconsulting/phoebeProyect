@@ -1,12 +1,6 @@
 import React from 'react';
-import {
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from 'react-native';
+import {Platform, ScrollView, StyleSheet, View, ViewStyle} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {BlurView} from 'expo-blur';
 import {LinearGradient} from 'expo-linear-gradient';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';

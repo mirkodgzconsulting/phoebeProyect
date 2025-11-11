@@ -1,7 +1,13 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 
-import {Articles, Components, Home, Profile, Pro} from '../screens';
+import {
+  Dashboard,
+  PracticeSession,
+  Profile,
+  ProgressOverview,
+  SettingsScreen,
+} from '../screens';
 import {useScreenOptions, useTranslation} from '../hooks';
 
 const Stack = createStackNavigator();
@@ -13,24 +19,28 @@ export default () => {
   return (
     <Stack.Navigator screenOptions={screenOptions.stack}>
       <Stack.Screen
-        name="Home"
-        component={Home}
-        options={{title: t('navigation.home')}}
+        name="Dashboard"
+        component={Dashboard}
+        options={{headerShown: false}}
       />
 
       <Stack.Screen
-        name="Components"
-        component={Components}
-        options={screenOptions.components}
+        name="PracticeSession"
+        component={PracticeSession}
+        options={{headerShown: false}}
       />
 
       <Stack.Screen
-        name="Articles"
-        component={Articles}
-        options={{title: t('navigation.articles')}}
+        name="ProgressOverview"
+        component={ProgressOverview}
+        options={{headerShown: false}}
       />
 
-      <Stack.Screen name="Pro" component={Pro} options={screenOptions.pro} />
+      <Stack.Screen
+        name="SettingsScreen"
+        component={SettingsScreen}
+        options={{headerShown: false}}
+      />
 
       <Stack.Screen
         name="Profile"

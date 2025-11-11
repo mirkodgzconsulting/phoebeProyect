@@ -9,6 +9,7 @@ import {useData, ThemeProvider, TranslationProvider} from '../hooks';
 import {
   Login,
   Register,
+  PremiumUpsell,
   Onboarding,
   OnboardingStepTwo,
   OnboardingStepThree,
@@ -23,6 +24,7 @@ const AuthNavigator = () => (
   <AuthStack.Navigator screenOptions={{headerShown: false}}>
     <AuthStack.Screen name="Login" component={Login} />
     <AuthStack.Screen name="Register" component={Register} />
+    <AuthStack.Screen name="PremiumUpsell" component={PremiumUpsell} />
   </AuthStack.Navigator>
 );
 

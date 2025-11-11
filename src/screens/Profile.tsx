@@ -1,225 +1,160 @@
-import React, {useCallback} from 'react';
-import {Platform, Linking} from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
-import {useNavigation} from '@react-navigation/core';
+import React, {useMemo} from 'react';
+import {ScrollView} from 'react-native';
+import {DrawerActions, useNavigation} from '@react-navigation/native';
 
-import {Block, Button, Image, Text} from '../components/';
-import {useData, useTheme, useTranslation} from '../hooks/';
-
-const isAndroid = Platform.OS === 'android';
+import {
+  Block,
+  BrandActionButton,
+  BrandBackground,
+  BrandChip,
+  BrandProgressBar,
+  BrandSectionHeader,
+  BrandSurface,
+  Image,
+  Text,
+  Button,
+} from '../components';
+import {useData, useTheme} from '../hooks';
 
 const Profile = () => {
-  const {user} = useData();
-  const {t} = useTranslation();
-  const navigation = useNavigation();
-  const {assets, colors, sizes} = useTheme();
+  const {user, progress, preferences, practice} = useData();
+  const {sizes, colors, assets} = useTheme();
+  const navigation = useNavigation<any>();
 
-  const IMAGE_SIZE = (sizes.width - (sizes.padding + sizes.sm) * 2) / 3;
-  const IMAGE_VERTICAL_SIZE =
-    (sizes.width - (sizes.padding + sizes.sm) * 2) / 2;
-  const IMAGE_MARGIN = (sizes.width - IMAGE_SIZE * 3 - sizes.padding * 2) / 2;
-  const IMAGE_VERTICAL_MARGIN =
-    (sizes.width - (IMAGE_VERTICAL_SIZE + sizes.sm) * 2) / 2;
-
-  const handleSocialLink = useCallback(
-    (type: 'twitter' | 'dribbble') => {
-      const url =
-        type === 'twitter'
-          ? `https://twitter.com/${user?.social?.twitter}`
-          : `https://dribbble.com/${user?.social?.dribbble}`;
-
-      try {
-        Linking.openURL(url);
-      } catch (error) {
-        alert(`Cannot open URL: ${url}`);
-      }
-    },
-    [user],
-  );
+  const streak = useMemo(() => {
+    const streakMilestone = progress.milestones.find(m => m.id === 'streak');
+    if (!streakMilestone) {
+      return {label: 'Streak attuale', value: 0, target: 7};
+    }
+    const value = parseInt(streakMilestone.value, 10) || 0;
+    return {label: 'Streak attuale', value, target: 7};
+  }, [progress.milestones]);
 
   return (
-    <Block safe marginTop={sizes.md}>
-      <Block
-        scroll
-        paddingHorizontal={sizes.s}
+    <BrandBackground>
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{paddingBottom: sizes.padding}}>
-        <Block flex={0}>
-          <Image
-            background
-            resizeMode="cover"
-            padding={sizes.sm}
-            paddingBottom={sizes.l}
-            radius={sizes.cardRadius}
-            color={colors.primary}
-            source={assets.background}>
-            <Button
-              row
-              flex={0}
-              justify="flex-start"
-              onPress={() => navigation.goBack()}>
-              <Image
-                radius={0}
-                width={10}
-                height={18}
-                color={colors.white}
-                source={assets.arrow}
-                transform={[{rotate: '180deg'}]}
-              />
-              <Text p white marginLeft={sizes.s}>
-                {t('profile.title')}
-              </Text>
-            </Button>
-            <Block flex={0} align="center">
-              <Image
-                width={64}
-                height={64}
-                marginBottom={sizes.sm}
-                source={{uri: user?.avatar}}
-              />
-              <Text h5 center white>
-                {user?.name}
-              </Text>
-              <Text p center white>
-                {user?.department}
-              </Text>
-              <Block row marginVertical={sizes.m}>
-                <Button
-                  white
-                  outlined
-                  shadow={false}
-                  radius={sizes.m}
-                  onPress={() => {
-                    alert(`Follow ${user?.name}`);
-                  }}>
-                  <Block
-                    justify="center"
-                    radius={sizes.m}
-                    paddingHorizontal={sizes.m}
-                    color="rgba(255,255,255,0.2)">
-                    <Text white bold transform="uppercase">
-                      {t('common.follow')}
-                    </Text>
-                  </Block>
-                </Button>
-                <Button
-                  shadow={false}
-                  radius={sizes.m}
-                  marginHorizontal={sizes.sm}
-                  color="rgba(255,255,255,0.2)"
-                  outlined={String(colors.white)}
-                  onPress={() => handleSocialLink('twitter')}>
-                  <Ionicons
-                    size={18}
-                    name="logo-twitter"
-                    color={colors.white}
-                  />
-                </Button>
-                <Button
-                  shadow={false}
-                  radius={sizes.m}
-                  color="rgba(255,255,255,0.2)"
-                  outlined={String(colors.white)}
-                  onPress={() => handleSocialLink('dribbble')}>
-                  <Ionicons
-                    size={18}
-                    name="logo-dribbble"
-                    color={colors.white}
-                  />
-                </Button>
-              </Block>
-            </Block>
-          </Image>
-
-          {/* profile: stats */}
-          <Block
-            flex={0}
+        contentContainerStyle={{padding: sizes.md}}>
+        <Block row justify="space-between" align="center" marginBottom={sizes.sm}>
+          <Button
+            color="rgba(255,255,255,0.12)"
             radius={sizes.sm}
-            shadow={!isAndroid} // disabled shadow on Android due to blur overlay + elevation issue
-            marginTop={-sizes.l}
-            marginHorizontal="8%"
-            color="rgba(255,255,255,0.2)">
-            <Block
-              row
-              blur
-              flex={0}
-              intensity={100}
-              radius={sizes.sm}
-              overflow="hidden"
-              tint={colors.blurTint}
-              justify="space-evenly"
-              paddingVertical={sizes.sm}
-              renderToHardwareTextureAndroid>
-              <Block align="center">
-                <Text h5>{user?.stats?.posts}</Text>
-                <Text>{t('profile.posts')}</Text>
-              </Block>
-              <Block align="center">
-                <Text h5>{(user?.stats?.followers || 0) / 1000}k</Text>
-                <Text>{t('profile.followers')}</Text>
-              </Block>
-              <Block align="center">
-                <Text h5>{(user?.stats?.following || 0) / 1000}k</Text>
-                <Text>{t('profile.following')}</Text>
-              </Block>
-            </Block>
-          </Block>
-
-          {/* profile: about me */}
-          <Block paddingHorizontal={sizes.sm}>
-            <Text h5 semibold marginBottom={sizes.s} marginTop={sizes.sm}>
-              {t('profile.aboutMe')}
-            </Text>
-            <Text p lineHeight={26}>
-              {user?.about}
-            </Text>
-          </Block>
-
-          {/* profile: photo album */}
-          <Block paddingHorizontal={sizes.sm} marginTop={sizes.s}>
-            <Block row align="center" justify="space-between">
-              <Text h5 semibold>
-                {t('common.album')}
-              </Text>
-              <Button>
-                <Text p primary semibold>
-                  {t('common.viewall')}
-                </Text>
-              </Button>
-            </Block>
-            <Block row justify="space-between" wrap="wrap">
-              <Image
-                resizeMode="cover"
-                source={assets?.photo1}
-                style={{
-                  width: IMAGE_VERTICAL_SIZE + IMAGE_MARGIN / 2,
-                  height: IMAGE_VERTICAL_SIZE * 2 + IMAGE_VERTICAL_MARGIN,
-                }}
-              />
-              <Block marginLeft={sizes.m}>
-                <Image
-                  resizeMode="cover"
-                  source={assets?.photo2}
-                  marginBottom={IMAGE_VERTICAL_MARGIN}
-                  style={{
-                    height: IMAGE_VERTICAL_SIZE,
-                    width: IMAGE_VERTICAL_SIZE,
-                  }}
-                />
-                <Image
-                  resizeMode="cover"
-                  source={assets?.photo3}
-                  style={{
-                    height: IMAGE_VERTICAL_SIZE,
-                    width: IMAGE_VERTICAL_SIZE,
-                  }}
-                />
-              </Block>
-            </Block>
-          </Block>
+            width={sizes.md}
+            height={sizes.md}
+            onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}>
+            <Image
+              radius={0}
+              width={18}
+              height={18}
+              color={colors.white}
+              source={assets.menu}
+            />
+          </Button>
+          <BrandChip
+            label="Dashboard"
+            tone="neutral"
+            onPress={() => navigation.navigate('Dashboard')}
+          />
         </Block>
-      </Block>
-    </Block>
+
+        <BrandSectionHeader
+          title={user?.name || 'Studente'}
+          subtitle={user?.department || 'Percorso personalizzato'}
+          action={<BrandChip tone="outline" label="Modifica" onPress={() => {}} />}
+        />
+
+        <BrandSurface tone="glass" style={{marginBottom: sizes.l}}>
+          <Block align="center" marginBottom={sizes.m}>
+            <Image
+              source={user?.avatar ? {uri: user.avatar} : assets.avatar1}
+              width={96}
+              height={96}
+              radius={48}
+              style={{marginBottom: sizes.sm}}
+            />
+            <Text center color="rgba(255,255,255,0.76)">
+              {user?.about ||
+                'Continua a esercitarti qualche minuto al giorno per consolidare la tua pronuncia.'}
+            </Text>
+          </Block>
+
+          <BrandSectionHeader
+            title="La tua streak"
+            subtitle="Costruisci l’abitudine quotidiana"
+          />
+          <BrandProgressBar
+            value={streak.value}
+            total={streak.target}
+            label={streak.label}
+          />
+
+          <Block
+            row
+            justify="space-between"
+            marginTop={sizes.md}
+            marginBottom={sizes.sm}>
+            <BrandSurface tone="neutral" style={{width: '48%'}}>
+              <Text color={colors.white} semibold>
+                Accento preferito
+              </Text>
+              <Text size={sizes.p - 2} color="rgba(255,255,255,0.7)">
+                {preferences.accent}
+              </Text>
+            </BrandSurface>
+
+            <BrandSurface tone="neutral" style={{width: '48%'}}>
+              <Text color={colors.white} semibold>
+                Livello target
+              </Text>
+              <Text size={sizes.p - 2} color="rgba(255,255,255,0.7)">
+                {preferences.targetLevel}
+              </Text>
+            </BrandSurface>
+          </Block>
+
+          <BrandSurface tone="neutral">
+            <Text color={colors.white} semibold marginBottom={sizes.xs}>
+              Tempo totale di pratica
+            </Text>
+            <Text size={sizes.p - 2} color="rgba(255,255,255,0.7)">
+              {progress.milestones.find(m => m.id === 'hours')?.value || '0h 0m'}
+            </Text>
+          </BrandSurface>
+        </BrandSurface>
+
+        <BrandSectionHeader
+          title="Feedback recenti"
+          subtitle="Basati sulle ultime sessioni con l’IA"
+        />
+        <BrandSurface tone="neutral" style={{marginBottom: sizes.sm}}>
+          <Text color={colors.white} semibold marginBottom={sizes.xs}>
+            Prossimo focus suggerito
+          </Text>
+          <Text size={sizes.p - 2} color="rgba(255,255,255,0.7)" marginBottom={sizes.sm}>
+            Lavora su "{practice.history[0]?.sentence || practice.targetSentence}" per migliorare ancora.
+          </Text>
+          <BrandActionButton label="Ripeti esercizio" onPress={() => {}} />
+        </BrandSurface>
+
+        <BrandSectionHeader
+          title="Badge & motivazione"
+          subtitle="Tieniti ispirato lungo il percorso"
+        />
+        {progress.milestones.map(milestone => (
+          <BrandSurface key={milestone.id} tone="glass" style={{marginBottom: sizes.sm}}>
+            <Text white semibold>
+              {milestone.title}
+            </Text>
+            <Text h5 white marginTop={sizes.xs} marginBottom={sizes.xs / 2}>
+              {milestone.value}
+            </Text>
+            <Text size={sizes.p - 2} color="rgba(255,255,255,0.72)">
+              {milestone.description}
+            </Text>
+          </BrandSurface>
+        ))}
+      </ScrollView>
+    </BrandBackground>
   );
 };
 
