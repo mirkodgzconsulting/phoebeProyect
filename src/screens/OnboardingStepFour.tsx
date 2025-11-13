@@ -3,7 +3,14 @@ import {Pressable, StyleSheet, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {useData, useTheme, useTranslation} from '../hooks/';
-import {Block, Image, Text, BrandBackground, BrandActionButton} from '../components/';
+import {
+  AssistantOrb,
+  Block,
+  Image,
+  Text,
+  BrandBackground,
+  BrandActionButton,
+} from '../components/';
 
 const TOTAL_STEPS = 4;
 const CURRENT_STEP = 4;
@@ -84,25 +91,7 @@ const OnboardingStepFour = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}>
         <Block align="center" marginBottom={sizes.m}>
-          <LinearGradient
-            colors={['rgba(11,61,77,0.28)', 'rgba(4,25,35,0.18)']}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 1}}
-            style={styles.avatarWrapper}>
-            <LinearGradient
-              colors={PROGRESS_GRADIENT}
-              start={{x: 0, y: 0}}
-              end={{x: 1, y: 1}}
-              style={styles.avatarInner}>
-              <Image
-                source={icons.profile}
-                radius={999}
-                width={56}
-                height={56}
-                color={colors.white}
-              />
-            </LinearGradient>
-          </LinearGradient>
+          <AssistantOrb size={132} state="idle" />
         </Block>
 
         <Block align="center" marginHorizontal={sizes.sm} marginBottom={sizes.m}>
@@ -217,23 +206,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  avatarWrapper: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(96,203,88,0.35)',
-    padding: 8,
-  },
-  avatarInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   tutorList: {
     width: '100%',

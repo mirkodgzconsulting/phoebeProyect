@@ -110,11 +110,11 @@ const DrawerContent = (
 
   // screen list for Drawer menu
   const screens = [
-    {name: 'Dashboard', to: 'Dashboard', icon: assets.home},
-    {name: 'Role Play', to: 'RolePlay', icon: assets.chat},
-    {name: 'Progressi', to: 'ProgressOverview', icon: assets.star},
-    {name: 'Profilo', to: 'Profile', icon: assets.profile},
-    {name: 'Impostazioni', to: 'SettingsScreen', icon: assets.settings},
+    {name: 'Dashboard', to: 'Dashboard', emoji: '🏠'},
+    {name: 'Role Play', to: 'RolePlay', emoji: '🎭'},
+    {name: 'Progressi', to: 'ProgressOverview', emoji: '📈'},
+    {name: 'Profilo', to: 'Profile', emoji: '👤'},
+    {name: 'Impostazioni', to: 'SettingsScreen', emoji: '⚙️'},
   ];
 
   return (
@@ -160,15 +160,12 @@ const DrawerContent = (
                 justify="center"
                 width={sizes.md}
                 height={sizes.md}
-                marginRight={sizes.s}
-                gradient={gradients[isActive ? 'primary' : 'white']}>
-                <Image
-                  radius={0}
-                  width={14}
-                  height={14}
-                  source={screen.icon}
-                  color={colors[isActive ? 'white' : 'black']}
-                />
+                marginRight={sizes.s}>
+                <Text
+                  style={{fontSize: 20}}
+                  color={colors[isActive ? 'white' : 'white']}>
+                  {screen.emoji}
+                </Text>
               </Block>
               <Text p semibold={isActive} color={labelColor}>
                 {screen.name}
@@ -207,9 +204,9 @@ const DrawerContent = (
               width={sizes.md}
               height={sizes.md}
               marginRight={sizes.s}
-              color="rgba(11,61,77,0.18)">
-              <Text color={colors.primary} semibold>
-                ⎋
+              color="transparent">
+              <Text style={{fontSize: 20}} color={labelColor}>
+                🚪
               </Text>
             </Block>
             <Text p semibold color={labelColor}>

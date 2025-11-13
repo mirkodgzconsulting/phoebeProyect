@@ -4,7 +4,13 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {useNavigation} from '@react-navigation/native';
 
 import {useTheme, useTranslation} from '../hooks/';
-import {Block, Image, Text, BrandBackground, BrandActionButton} from '../components/';
+import {
+  AssistantOrb,
+  Block,
+  Text,
+  BrandBackground,
+  BrandActionButton,
+} from '../components/';
 
 const TOTAL_STEPS = 4;
 const CURRENT_STEP = 1;
@@ -48,7 +54,7 @@ const CARD_BORDER_INACTIVE = 'rgba(255,255,255,0.16)';
 const CARD_BORDER_ACTIVE = 'rgba(255,255,255,0.36)';
 
 const Onboarding = () => {
-  const {colors, sizes, icons} = useTheme();
+  const {colors, sizes} = useTheme();
   const {t} = useTranslation();
   const navigation = useNavigation<any>();
 
@@ -99,25 +105,7 @@ const Onboarding = () => {
         contentContainerStyle={styles.content}>
           {/* Avatar */}
           <Block align="center" marginBottom={sizes.m}>
-            <LinearGradient
-              colors={['rgba(11,61,77,0.28)', 'rgba(4,25,35,0.18)']}
-              start={{x: 0, y: 0}}
-              end={{x: 1, y: 1}}
-              style={styles.avatarWrapper}>
-              <LinearGradient
-                colors={PROGRESS_GRADIENT}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 1}}
-                style={styles.avatarInner}>
-                <Image
-                  source={icons.profile}
-                  radius={999}
-                  width={56}
-                  height={56}
-                  color={colors.white}
-                />
-              </LinearGradient>
-            </LinearGradient>
+            <AssistantOrb size={132} state="idle" />
           </Block>
 
           {/* Título y subtítulo */}

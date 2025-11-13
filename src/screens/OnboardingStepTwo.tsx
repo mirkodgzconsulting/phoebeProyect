@@ -5,10 +5,10 @@ import {useNavigation} from '@react-navigation/native';
 
 import {useTheme, useTranslation} from '../hooks/';
 import {
+  AssistantOrb,
   Block,
   BrandActionButton,
   BrandBackground,
-  Image,
   Text,
 } from '../components/';
 
@@ -80,7 +80,7 @@ const CARD_BORDER_INACTIVE = 'rgba(255,255,255,0.18)';
 const CARD_BORDER_ACTIVE = 'rgba(255,255,255,0.38)';
 
 const OnboardingStepTwo = () => {
-  const {colors, sizes, icons} = useTheme();
+  const {colors, sizes} = useTheme();
   const {t} = useTranslation();
   const navigation = useNavigation<any>();
 
@@ -125,25 +125,7 @@ const OnboardingStepTwo = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}>
           <Block align="center" marginBottom={sizes.m}>
-            <LinearGradient
-              colors={['rgba(11,61,77,0.28)', 'rgba(4,25,35,0.18)']}
-              start={{x: 0, y: 0}}
-              end={{x: 1, y: 1}}
-              style={styles.avatarWrapper}>
-              <LinearGradient
-                colors={PROGRESS_GRADIENT}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 1}}
-                style={styles.avatarInner}>
-                <Image
-                  source={icons.profile}
-                  radius={999}
-                  width={56}
-                  height={56}
-                  color={colors.white}
-                />
-              </LinearGradient>
-            </LinearGradient>
+            <AssistantOrb size={132} state="idle" />
           </Block>
 
           <Block
@@ -240,23 +222,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  avatarWrapper: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(96,203,88,0.35)',
-    padding: 8,
-  },
-  avatarInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   grid: {
     marginTop: 8,
