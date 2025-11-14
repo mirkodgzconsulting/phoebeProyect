@@ -12,7 +12,7 @@ import {
   Text,
 } from '../components/';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 8;
 const CURRENT_STEP = 2;
 
 const BRAND_GRADIENT = ['#0B3D4D', '#60CB58'] as const;
@@ -72,6 +72,19 @@ const INTERESTS = [
     emoji: '💻',
     activeGradient: ['#4FACFE', '#00F2FE'] as const,
   },
+  {
+    id: 'current-events',
+    label: 'Attualità e cultura pop',
+    emoji: '🗞️',
+    activeGradient: ['#FBD786', '#f7797d'] as const,
+  },
+  {
+    id: 'personal-growth',
+    label: 'Crescita personale e benessere',
+    emoji: '🧘',
+    activeGradient: ['#7F7CFF', '#00F5FF'] as const,
+    fullWidth: true,
+  },
 ];
 
 const PROGRESS_GRADIENT = BRAND_GRADIENT;
@@ -80,7 +93,7 @@ const CARD_BORDER_INACTIVE = 'rgba(255,255,255,0.18)';
 const CARD_BORDER_ACTIVE = 'rgba(255,255,255,0.38)';
 
 const OnboardingStepTwo = () => {
-  const {colors, sizes} = useTheme();
+  const {sizes} = useTheme();
   const {t} = useTranslation();
   const navigation = useNavigation<any>();
 

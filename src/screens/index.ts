@@ -5,6 +5,10 @@ export {default as Onboarding} from './Onboarding';
 export {default as OnboardingStepTwo} from './OnboardingStepTwo';
 export {default as OnboardingStepThree} from './OnboardingStepThree';
 export {default as OnboardingStepFour} from './OnboardingStepFour';
+export {default as OnboardingStepFive} from './OnboardingStepFive';
+export {default as OnboardingStepSix} from './OnboardingStepSix';
+export {default as OnboardingStepSeven} from './OnboardingStepSeven';
+export {default as OnboardingStepEight} from './OnboardingStepEight';
 
 export {default as Dashboard} from './Dashboard';
 export {default as RolePlay} from './RolePlay';

@@ -12,7 +12,7 @@ import {
   Text,
 } from '../components/';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 8;
 const CURRENT_STEP = 3;
 
 type FocusOption = {
@@ -36,7 +36,7 @@ const OPTIONS: FocusOption[] = [
     id: 'vocabulary',
     label: 'Vocabolario',
     description: 'Impara parole e espressioni nuove.',
-    emoji: '🗣️',
+    emoji: '📝',
     activeGradient: ['#FBC2EB', '#A6C1EE'] as const,
   },
   {
@@ -60,6 +60,21 @@ const OPTIONS: FocusOption[] = [
     emoji: '💬',
     activeGradient: ['#8EC5FC', '#E0C3FC'] as const,
   },
+  {
+    id: 'active-listening',
+    label: 'Ascolto attivo',
+    description: 'Rispondi con sicurezza durante i dialoghi.',
+    emoji: '👂',
+    activeGradient: ['#F6D365', '#FDA085'] as const,
+  },
+  {
+    id: 'work-english',
+    label: 'Inglese per il lavoro',
+    description: 'Gestisci riunioni, email e presentazioni.',
+    emoji: '🏢',
+    activeGradient: ['#7F7CFF', '#00F5FF'] as const,
+    fullWidth: true,
+  },
 ];
 const PROGRESS_GRADIENT = ['#7F7CFF', '#00F5FF'] as const;
 const CARD_INACTIVE_BG = 'rgba(255,255,255,0.06)';
@@ -67,7 +82,7 @@ const CARD_BORDER_INACTIVE = 'rgba(255,255,255,0.16)';
 const CARD_BORDER_ACTIVE = 'rgba(255,255,255,0.36)';
 
 const OnboardingStepThree = () => {
-  const {colors, sizes} = useTheme();
+  const {sizes} = useTheme();
   const {t} = useTranslation();
   const navigation = useNavigation<any>();
 
@@ -133,8 +148,8 @@ const OnboardingStepThree = () => {
               Su cosa vuoi concentrarti?
             </Text>
             <Text center size={sizes.s} color="rgba(255,255,255,0.76)">
-              L’IA creerà lezioni per migliorare queste abilità. Seleziona almeno
-              due opzioni per continuare.
+              L’appIA creerà lezioni per migliorare queste abilità. Seleziona
+              almeno due opzioni per continuare.
             </Text>
           </Block>
 

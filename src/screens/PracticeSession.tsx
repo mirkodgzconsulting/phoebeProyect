@@ -130,7 +130,14 @@ const PracticeSession = () => {
     [currentPair, studentFirstName],
   );
 
-  const currentLevelLabel = currentLevel?.label ?? 'Beginner';
+  // Extraer solo el nombre del tutor (sin "Tutor IA ·")
+  const tutorNameOnly = useMemo(() => {
+    const fullName = practice.tutorName || '';
+    // Si contiene "·", tomar la parte después del separador
+    const parts = fullName.split('·');
+    return parts.length > 1 ? parts[parts.length - 1].trim() : fullName;
+  }, [practice.tutorName]);
+
   const totalTurns = conversationPairs.length;
   const currentTurnNumber =
     totalTurns > 0 ? Math.min(interviewIndex + 1, totalTurns) : 0;
@@ -310,6 +317,7 @@ const PracticeSession = () => {
         setVoiceError(null);
         await stopVoicePlayback();
         const uri = await requestPracticeVoice(text);
+        const SYNC_THRESHOLD = 200;
         const statusHandler = (status: AVPlaybackStatus) => {
           if (!status.isLoaded) {
             if ('error' in status && status.error && __DEV__) {
@@ -317,7 +325,11 @@ const PracticeSession = () => {
             }
             return;
           }
-          setIsPlayingVoice(Boolean(status.isPlaying));
+          const shouldAnimate =
+            Boolean(status.isPlaying) &&
+            typeof status.positionMillis === 'number' &&
+            status.positionMillis >= SYNC_THRESHOLD;
+          setIsPlayingVoice(shouldAnimate);
           if (status.didJustFinish) {
             setIsPlayingVoice(false);
             voiceSoundRef.current?.setOnPlaybackStatusUpdate(null);
@@ -331,9 +343,12 @@ const PracticeSession = () => {
           statusHandler,
         );
         voiceSoundRef.current = sound;
-        if (status.isLoaded && status.isPlaying) {
-          setIsPlayingVoice(true);
-        }
+        const initialShouldAnimate =
+          status.isLoaded &&
+          status.isPlaying &&
+          typeof status.positionMillis === 'number' &&
+          status.positionMillis >= SYNC_THRESHOLD;
+        setIsPlayingVoice(initialShouldAnimate);
       } catch (voiceErrorInstance) {
         const message =
           voiceErrorInstance instanceof Error
@@ -478,7 +493,6 @@ const PracticeSession = () => {
       : isPlayingVoice
       ? 'Riproduzione del feedback…'
       : 'Pronto per praticare';
-  const coachMessage = `${scenarioConfig.title}: ${studentFirstName}, rispondi in inglese con sicurezza (${currentLevelLabel}).`;
 
   const avatarMode = (() => {
     if (isPlayingVoice || assistantState === 'speaking') {
@@ -510,19 +524,17 @@ const PracticeSession = () => {
 
   return (
     <BrandBackground>
-      <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: sizes.padding,
-          paddingTop: sizes.l,
-          paddingBottom: sizes.xl,
-        }}
-        showsVerticalScrollIndicator={false}>
-        {/* HEADER */}
+      <Block flex={1}>
+        {/* HEADER MINIMALISTA */}
         <Block
           row
-          justify="space-between"
+          justify="flex-start"
           align="center"
-          marginBottom={sizes.sm}>
+          style={{
+            paddingHorizontal: sizes.padding,
+            paddingTop: sizes.l,
+            paddingBottom: sizes.sm,
+          }}>
           <Button
             color="rgba(255,255,255,0.12)"
             radius={sizes.sm}
@@ -537,305 +549,325 @@ const PracticeSession = () => {
               source={assets.menu}
             />
           </Button>
-          <BrandChip
-            label="Progressi"
-            tone="neutral"
-            onPress={() => navigation.navigate('ProgressOverview')}
-          />
         </Block>
 
-        {/* INTRO */}
-        <Text
-          size={sizes.p - 2}
-          color="rgba(255,255,255,0.7)"
-          marginBottom={sizes.xs}>
-          🎭 Role Play
-        </Text>
-        <BrandSectionHeader
-          title={scenarioConfig.title}
-          subtitle={scenarioConfig.introEn}
-        />
-
-        <BrandSurface tone="glass" style={{marginBottom: sizes.l}}>
-          <Text color="rgba(255,255,255,0.82)" semibold>
-            English
-          </Text>
-          <Text color="rgba(255,255,255,0.76)" marginBottom={sizes.sm}>
-            {scenarioConfig.introEn}
-          </Text>
-          <Text color="rgba(255,255,255,0.82)" semibold>
-            Italiano
-          </Text>
-          <Text color="rgba(255,255,255,0.76)">
-            {scenarioConfig.introIt}
-          </Text>
-        </BrandSurface>
-
-        {/* SELECTOR DE NIVELES – reemplaza BrandChip para evitar texto partido/bordes dobles */}
+        {/* BOTONES DE NIVEL FLOTANTES - VERTICALES A LA IZQUIERDA (SOLO ICONOS) */}
         <Block
-          row
-          wrap="wrap"
-          justify="flex-start"
-          marginBottom={sizes.m}>
-          {scenarioConfig.levels.map((level) => {
-            const isActive = activeLevelId === level.id;
-            return (
-              <Button
-                key={level.id}
-                onPress={() => handleLevelSelect(level.id)}
-                radius={sizes.cardRadius}
-                color={
-                  isActive
-                    ? 'rgba(61, 214, 152, 0.22)'
-                    : 'rgba(255,255,255,0.08)'
-                }
-                style={{
-                  minWidth: 110,
-                  paddingHorizontal: sizes.sm,
-                  height: sizes.l * 1.4,
-                  justifyContent: 'center',
-                  marginRight: sizes.xs,
-                  marginBottom: sizes.xs,
-                }}>
-                <Text
-                  center
-                  semibold={isActive}
-                  color={colors.white}
-                  numberOfLines={1}
-                  ellipsizeMode="tail">
-                  {level.label}
-                </Text>
-              </Button>
-            );
-          })}
+          style={{
+            position: 'absolute',
+            left: sizes.xs,
+            top: '40%',
+            zIndex: 10,
+          }}>
+          <Block>
+            {scenarioConfig.levels.map((level, index) => {
+              const isActive = activeLevelId === level.id;
+              // Iconos para cada nivel
+              const levelIcons: Record<string, string> = {
+                beginner: '🟡', // Amarillo - Básico
+                intermediate: '🟠', // Naranja - Intermedio
+                advanced: '🟢', // Verde - Avanzado
+              };
+              const levelIcon = levelIcons[level.id] || '●';
+              
+              return (
+                <Button
+                  key={level.id}
+                  onPress={() => handleLevelSelect(level.id)}
+                  radius={sizes.cardRadius}
+                  color={
+                    isActive
+                      ? 'rgba(61, 214, 152, 0.22)'
+                      : 'rgba(255,255,255,0.08)'
+                  }
+                  style={{
+                    width: sizes.l * 1.2,
+                    height: sizes.l * 1.2,
+                    paddingHorizontal: 0,
+                    paddingVertical: 0,
+                    marginBottom: sizes.xs,
+                    borderWidth: isActive ? 1.5 : 0,
+                    borderColor: isActive
+                      ? 'rgba(96,203,88,0.6)'
+                      : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <Text
+                    style={{
+                      fontSize: sizes.l,
+                    }}>
+                    {levelIcon}
+                  </Text>
+                </Button>
+              );
+            })}
+          </Block>
         </Block>
 
-        {/* ÁREA PRINCIPAL */}
-          <BrandSurface tone="glass" style={{marginBottom: sizes.l}}>
-          <Block align="center" marginBottom={sizes.m}>
-            <RolePlayAvatar mode={avatarMode} size={220} />
-            <Text white semibold size={sizes.h5} marginTop={sizes.sm}>
-              {practice.tutorName}
-            </Text>
-            <Text center color="rgba(255,255,255,0.76)" size={sizes.p - 1}>
-              {coachMessage}
-            </Text>
-            <BrandActionButton
-              label={
-                micPermission !== 'granted'
+        {/* CONTENIDO */}
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingHorizontal: sizes.padding,
+            paddingBottom: sizes.xl,
+          }}
+          keyboardShouldPersistTaps="handled">
+          <Block flex={1} justify="space-between">
+            {/* VISTA TIPO VIDEOLLAMADA */}
+            <Block align="center" marginTop={sizes.sm}>
+              {/* Contenedor del avatar con nombre dentro */}
+              <Block style={{position: 'relative'}}>
+                <RolePlayAvatar mode={avatarMode} size={300} />
+                
+                {/* Nombre del tutor - DENTRO DEL VIDEO, EN LA PARTE INFERIOR */}
+                <Block
+                  style={{
+                    position: 'absolute',
+                    bottom: sizes.sm,
+                    left: 0,
+                    right: 0,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <Block
+                    style={{
+                      backgroundColor: 'rgba(0,0,0,0.5)',
+                      paddingHorizontal: sizes.sm,
+                      paddingVertical: sizes.xs,
+                      borderRadius: sizes.sm,
+                    }}>
+                    <Text white semibold size={sizes.p - 2}>
+                      {tutorNameOnly}
+                    </Text>
+                  </Block>
+                </Block>
+              </Block>
+
+              {/* Micrófono - JUSTO DEBAJO DEL AVATAR */}
+              <Block align="center" marginTop={sizes.sm}>
+                <Button
+                  flex={0}
+                  radius={sizes.l * 0.55}
+                  color={
+                    isRecording
+                      ? 'rgba(255,107,107,0.25)'
+                      : 'rgba(96,203,88,0.25)'
+                  }
+                  style={{
+                    width: sizes.l * 0.95,
+                    height: sizes.l * 0.95,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1.5,
+                    borderColor: isRecording
+                      ? 'rgba(255,107,107,0.7)'
+                      : 'rgba(96,203,88,0.7)',
+                  }}
+                  onPress={handleToggleRecordingWrapper}
+                  disabled={isProcessing || isPlayingVoice}>
+                  <Block
+                    width={sizes.l * 0.7}
+                    height={sizes.l * 0.7}
+                    radius={sizes.l * 0.5}
+                    gradient={
+                      isRecording ? gradients.warning : gradients.primary
+                    }
+                    align="center"
+                    justify="center">
+                    <Image
+                      source={icons.chat}
+                      width={sizes.sm}
+                      height={sizes.sm}
+                      color={colors.white}
+                      radius={0}
+                    />
+                  </Block>
+                </Button>
+              </Block>
+              
+              {/* Texto "Tocca per parlare" */}
+              <Text
+                marginTop={sizes.xs}
+                color="rgba(255,255,255,0.85)"
+                semibold
+                size={sizes.p - 1}
+                center>
+                {micPermission !== 'granted'
                   ? 'Consenti microfono'
                   : isRecording
-                  ? 'Ferma registrazione'
+                  ? 'Registrando…'
                   : isProcessing
                   ? 'Analisi in corso...'
                   : isPlayingVoice
                   ? 'Riproduzione feedback...'
-                  : 'Inizia la pratica'
-              }
-              onPress={handleToggleRecordingWrapper}
-              disabled={isProcessing || isPlayingVoice}
-              style={{
-                marginTop: sizes.sm,
-                width: '70%',
-              }}
-            />
-            <Text
-              marginTop={sizes.xs}
-              size={sizes.p - 2}
-              color="rgba(255,255,255,0.72)">
-              {micStatusLabel}
-            </Text>
-            {error ? (
-              <Text
-                marginTop={sizes.xs}
-                size={sizes.p - 2}
-                color={colors.danger ?? '#FF6B6B'}>
-                {error}
+                  : 'Tocca per parlare'}
               </Text>
-            ) : null}
-          </Block>
 
-          <BrandSurface tone="neutral" style={{marginBottom: sizes.m}}>
-            <Text color={colors.white} marginBottom={sizes.xs} semibold>
-              Turno {currentTurnNumber > 0 ? currentTurnNumber : '—'} di{' '}
-              {totalTurnsDisplay}
-            </Text>
-            <Text color="rgba(255,255,255,0.72)" size={sizes.p - 1}>
-              Tutor AI
-            </Text>
-            <Text white semibold size={sizes.p} marginBottom={sizes.sm}>
-              {currentTutorPrompt || 'Preparando il prossimo turno...'}
-            </Text>
-            <Text color="rgba(255,255,255,0.72)" size={sizes.p - 1}>
-              Risposta di esempio
-            </Text>
-            <Text color="rgba(255,255,255,0.9)" size={sizes.p}>
-              {expectedUserSample ||
-                'Formula la tua miglior risposta in inglese per rinforzare la pratica.'}
-            </Text>
-            <BrandActionButton
-              label="Prossimo turno"
-              onPress={goToNextInterviewSentence}
-              disabled={
-                isRecording ||
-                isProcessing ||
-                isPlayingVoice ||
-                conversationPairs.length === 0
-              }
-              style={{marginTop: sizes.sm}}
-            />
-          </BrandSurface>
-
-          <BrandSurface tone="neutral" style={{marginBottom: sizes.m}}>
-            <Text bold color={colors.white} marginBottom={sizes.xs}>
-              Feedback
-            </Text>
-            <Text size={sizes.p - 1} color="rgba(255,255,255,0.85)">
-              {dynamicFeedback ??
-                'Registra la tua risposta per ricevere un feedback personalizzato.'}
-            </Text>
-            {analysisVerdict ? (
+              {/* Estado del micrófono */}
               <Text
-                semibold
-                marginTop={sizes.sm}
-                marginBottom={sizes.xs}
-                color={
-                  analysisVerdict === 'correct'
-                    ? 'rgba(111,255,200,0.9)'
-                    : colors.danger ?? '#FF6B6B'
-                }>
-                {analysisVerdict === 'correct'
-                  ? 'Pronuncia accettabile'
-                  : 'Pronuncia da migliorare'}
+                center
+                color="rgba(255,255,255,0.7)"
+                size={sizes.p - 1}
+                marginTop={sizes.xs}>
+                {micStatusLabel}
               </Text>
-            ) : null}
-            {analysisSummary ? (
-              <>
-                <Text size={sizes.p - 1} color="rgba(255,255,255,0.76)">
-                  {analysisSummary}
-                </Text>
-                <BrandActionButton
-                  label={isPlayingVoice ? 'Riproduzione...' : 'Ascolta feedback'}
-                  onPress={() => playVoiceMessage(analysisSummary)}
-                  disabled={isPlayingVoice}
-                  style={{marginTop: sizes.sm}}
-                />
-              </>
-            ) : null}
-            {voiceError ? (
-              <Text
-                marginTop={sizes.xs}
-                size={sizes.p - 2}
-                color={colors.danger ?? '#FF6B6B'}>
-                {voiceError}
-              </Text>
-            ) : null}
-          </BrandSurface>
 
-          <BrandSectionHeader
-            title="Progresso del role play"
-            subtitle={`Turni completati ${sessionProgress.completed} di ${sessionProgress.total}`}
-          />
-          <BrandProgressBar value={sessionProgress.percentage} />
-
-          {processingError ? (
-            <Text
-              color={colors.danger ?? '#FF6B6B'}
-              size={sizes.p - 2}
-              marginTop={sizes.sm}>
-              {processingError}
-            </Text>
-          ) : null}
-
-          <Block row justify="space-between" marginTop={sizes.l}>
-            <Button
-              flex={0}
-              radius={sizes.cardRadius}
-              color="rgba(255,255,255,0.12)"
-              style={{
-                width: sizes.xl * 2.2,
-                height: sizes.xl * 2.2,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onPress={handleToggleRecordingWrapper}>
+              {/* Barra de progreso - DELGADA, DEBAJO DEL ESTADO */}
               <Block
-                width={72}
-                height={72}
-                radius={36}
-                gradient={isRecording ? gradients.warning : gradients.primary}
-                align="center"
-                justify="center">
-                <Image
-                  source={icons.chat}
-                  width={28}
-                  height={28}
-                  color={colors.white}
-                  radius={0}
-                />
+                style={{
+                  width: '60%',
+                  marginTop: sizes.xs,
+                  alignSelf: 'center',
+                }}>
+                <Block
+                  height={2}
+                  radius={1}
+                  color="rgba(255,255,255,0.12)"
+                  style={{overflow: 'hidden'}}>
+                  <Block
+                    height="100%"
+                    width={`${sessionProgress.percentage}%`}
+                    gradient={gradients.primary}
+                  />
+                </Block>
               </Block>
-              <Text
-                marginTop={sizes.xs}
-                color="rgba(255,255,255,0.82)"
-                semibold
-                size={sizes.p - 2}>
-                {isRecording ? 'Registrando…' : 'Inizia registrazione'}
-              </Text>
-            </Button>
 
-            <BrandSurface
-              tone="neutral"
-              style={{
-                flex: 1,
-                marginLeft: sizes.sm,
-                justifyContent: 'center',
-              }}>
-              <Text color="rgba(255,255,255,0.76)" size={sizes.p - 2}>
-                Ultimo punteggio
-              </Text>
-              <Text h3 white semibold>
-                {practice.lastScore}
-              </Text>
-              <Text size={sizes.p - 2} color="rgba(255,255,255,0.6)">
-                Ottimo controllo dell’intonazione!
-              </Text>
-            </BrandSurface>
-          </Block>
+              {error ? (
+                <Text
+                  marginTop={sizes.xs}
+                  size={sizes.p - 2}
+                  color={colors.danger ?? '#FF6B6B'}
+                  center>
+                  {error}
+                </Text>
+              ) : null}
+            </Block>
 
-          {error ? (
-            <BrandSurface tone="warning" style={{marginTop: sizes.sm}}>
-              <Text white>{error}</Text>
-            </BrandSurface>
-          ) : null}
+            {/* CONTROLES INFERIORES */}
+            <Block marginTop={sizes.sm}>
+              {/* Turno */}
+              <Block marginBottom={sizes.sm} align="center">
+                <Text color="rgba(255,255,255,0.76)" size={sizes.p - 2} center>
+                  Turno {currentTurnNumber > 0 ? currentTurnNumber : '—'} di{' '}
+                  {totalTurnsDisplay}
+                </Text>
+                <Text white semibold size={sizes.p} numberOfLines={2} marginTop={sizes.xs} center>
+                  {currentTutorPrompt || 'Preparando il prossimo turno...'}
+                </Text>
+              </Block>
 
-          {lastUri ? (
-            <BrandSurface tone="glass" style={{marginTop: sizes.sm}}>
-              <Text white semibold>Ultima registrazione salvata</Text>
-              <Text size={sizes.p - 2} color="rgba(255,255,255,0.72)">
-                {lastUri}
-              </Text>
+              {/* Botones secundarios */}
+              <Block align="center" marginBottom={sizes.sm}>
+                <Block row justify="center" style={{width: '100%'}}>
+                  <BrandActionButton
+                    label="Prossimo turno"
+                    onPress={goToNextInterviewSentence}
+                    disabled={
+                      isRecording ||
+                      isProcessing ||
+                      isPlayingVoice ||
+                      conversationPairs.length === 0
+                    }
+                    style={{flex: 1, maxWidth: 200}}
+                  />
+                  {analysisSummary ? (
+                    <BrandActionButton
+                      label={isPlayingVoice ? 'Riproduzione...' : 'Feedback'}
+                      onPress={() => playVoiceMessage(analysisSummary)}
+                      disabled={isPlayingVoice}
+                      style={{flex: 1, maxWidth: 200, marginLeft: sizes.xs}}
+                    />
+                  ) : null}
+                </Block>
+              </Block>
+
+              {/* Feedback */}
+              {analysisSummary || dynamicFeedback || analysisVerdict ? (
+                <BrandSurface tone="neutral" style={{marginBottom: sizes.sm}}>
+                  {analysisVerdict ? (
+                    <Text
+                      semibold
+                      marginBottom={sizes.xs}
+                      color={
+                        analysisVerdict === 'correct'
+                          ? 'rgba(111,255,200,0.9)'
+                          : colors.danger ?? '#FF6B6B'
+                      }
+                      center>
+                      {analysisVerdict === 'correct'
+                        ? '✓ Pronuncia accettabile'
+                        : '⚠ Pronuncia da migliorare'}
+                    </Text>
+                  ) : null}
+                  {dynamicFeedback ? (
+                    <Text
+                      size={sizes.p - 1}
+                      color="rgba(255,255,255,0.85)"
+                      marginBottom={sizes.xs}
+                      center>
+                      {dynamicFeedback}
+                    </Text>
+                  ) : null}
+                  {analysisSummary ? (
+                    <Text size={sizes.p - 1} color="rgba(255,255,255,0.76)" center>
+                      {analysisSummary}
+                    </Text>
+                  ) : null}
+                  {voiceError ? (
+                    <Text
+                      marginTop={sizes.xs}
+                      size={sizes.p - 2}
+                      color={colors.danger ?? '#FF6B6B'}
+                      center>
+                      {voiceError}
+                    </Text>
+                  ) : null}
+                </BrandSurface>
+              ) : null}
+
+              {/* Respuesta de ejemplo */}
+              {expectedUserSample ? (
+                <BrandSurface tone="glass" style={{marginBottom: sizes.sm}}>
+                  <Text
+                    color="rgba(255,255,255,0.72)"
+                    size={sizes.p - 2}
+                    marginBottom={sizes.xs}
+                    center>
+                    Risposta di esempio
+                  </Text>
+                  <Text
+                    color="rgba(255,255,255,0.9)"
+                    size={sizes.p - 1}
+                    center>
+                    {expectedUserSample}
+                  </Text>
+                </BrandSurface>
+              ) : null}
+
+              {processingError ? (
+                <Text
+                  color={colors.danger ?? '#FF6B6B'}
+                  size={sizes.p - 2}
+                  marginBottom={sizes.sm}
+                  center>
+                  {processingError}
+                </Text>
+              ) : null}
+
+              {/* Terminar sesión */}
               <BrandActionButton
-                label={isProcessing ? 'Analisi in corso...' : 'Ripeti analisi'}
-                onPress={handleReanalyzeRecording}
-                disabled={isProcessing}
+                label="Termina sessione"
+                onPress={() => navigation.goBack()}
                 style={{marginTop: sizes.sm}}
               />
-              <BrandActionButton
-                label="Reset"
-                onPress={handleResetRecording}
-                style={{marginTop: sizes.xs}}
-              />
-            </BrandSurface>
-          ) : null}
-        </BrandSurface>
-        <BrandActionButton
-          label="Termina sessione"
-          onPress={() => {}}
-          style={{marginTop: sizes.l, marginBottom: sizes.xl}}
-        />
-      </ScrollView>
+            </Block>
+          </Block>
+        </ScrollView>
+      </Block>
     </BrandBackground>
   );
 };
 
 export default PracticeSession;
+

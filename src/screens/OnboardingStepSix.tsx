@@ -7,59 +7,45 @@ import {useTheme, useTranslation} from '../hooks/';
 import {
   AssistantOrb,
   Block,
-  Text,
-  BrandBackground,
   BrandActionButton,
+  BrandBackground,
+  Text,
 } from '../components/';
 
 const TOTAL_STEPS = 8;
-const CURRENT_STEP = 4;
+const CURRENT_STEP = 6;
 
-type LearningStyleOption = {
+type TimeOption = {
   id: string;
   label: string;
-  description: string;
   emoji: string;
   activeGradient: readonly [string, string];
-  fullWidth?: boolean;
 };
 
-const OPTIONS: LearningStyleOption[] = [
+const OPTIONS: TimeOption[] = [
   {
-    id: 'conversations',
-    label: 'Conversazioni pratiche',
-    description: 'Dialoghi realistici per imparare parlando.',
-    emoji: '🗨️',
+    id: '5',
+    label: '5 minuti',
+    emoji: '⏱️',
     activeGradient: ['#43E97B', '#38F9D7'],
   },
   {
-    id: 'mini-lessons',
-    label: 'Mini-lezioni con spiegazioni chiare',
-    description: 'Brevi spiegazioni guidate passo dopo passo.',
-    emoji: '📚',
+    id: '10',
+    label: '10 minuti',
+    emoji: '🕙',
     activeGradient: ['#A18CD1', '#FBC2EB'],
   },
   {
-    id: 'games',
-    label: 'Giochi e quiz',
-    description: 'Sfide divertenti per memorizzare più in fretta.',
-    emoji: '🎯',
+    id: '20',
+    label: '20 minuti',
+    emoji: '🕒',
     activeGradient: ['#F6D365', '#FDA085'],
   },
   {
-    id: 'repetition',
-    label: 'Ripetizione e memorizzazione',
-    description: 'Routine e ripassi per fissare i concetti.',
-    emoji: '🔁',
-    activeGradient: ['#4FACFE', '#00F2FE'],
-  },
-  {
-    id: 'feedback',
-    label: 'Feedback e correzioni dal tutor',
-    description: 'Indicazioni personalizzate per migliorare subito.',
-    emoji: '✅',
+    id: '30',
+    label: '30+ minuti',
+    emoji: '🕓',
     activeGradient: ['#7F7CFF', '#00F5FF'],
-    fullWidth: true,
   },
 ];
 
@@ -68,34 +54,30 @@ const CARD_BORDER_INACTIVE = 'rgba(255,255,255,0.18)';
 const CARD_BORDER_ACTIVE = 'rgba(255,255,255,0.38)';
 const PROGRESS_GRADIENT = ['#0B3D4D', '#60CB58'] as const;
 
-const OnboardingStepFour = () => {
+const OnboardingStepSix = () => {
   const navigation = useNavigation<any>();
   const {sizes} = useTheme();
   const {t} = useTranslation();
 
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
 
   const progress = useMemo(
     () => Math.min((CURRENT_STEP / TOTAL_STEPS) * 100, 100),
     [],
   );
 
-  const handleToggle = useCallback((option: LearningStyleOption) => {
-    setSelected(prev =>
-      prev.includes(option.id)
-        ? prev.filter(item => item !== option.id)
-        : [...prev, option.id],
-    );
+  const handleSelect = useCallback((option: TimeOption) => {
+    setSelected(prev => (prev === option.id ? null : option.id));
   }, []);
 
   const handleContinue = useCallback(() => {
-    if (!selected.length) {
+    if (!selected) {
       return;
     }
-    navigation.navigate('OnboardingStepFive');
-  }, [navigation, selected.length]);
+    navigation.navigate('OnboardingStepSeven');
+  }, [navigation, selected]);
 
-  const continueDisabled = useMemo(() => selected.length === 0, [selected]);
+  const continueDisabled = useMemo(() => selected === null, [selected]);
 
   return (
     <BrandBackground>
@@ -125,22 +107,22 @@ const OnboardingStepFour = () => {
           marginHorizontal={sizes.sm}
           marginBottom={sizes.m}>
           <Text h4 center white marginBottom={sizes.xs}>
-            Come preferisci imparare?
+            Quanto tempo vuoi dedicare all’inglese ogni giorno?
           </Text>
           <Text center size={sizes.s} color="rgba(255,255,255,0.76)">
-            Scegli il metodo che ti aiuta di più.
+            Ti aiuteremo a costruire una routine realistica.
           </Text>
         </Block>
 
         <View style={styles.grid}>
           {OPTIONS.map(option => {
-            const isActive = selected.includes(option.id);
+            const isActive = selected === option.id;
 
             return (
               <Pressable
                 key={option.id}
-                onPress={() => handleToggle(option)}
-                style={[styles.cardWrapper, option.fullWidth && styles.cardWrapperFull]}
+                onPress={() => handleSelect(option)}
+                style={styles.cardWrapper}
                 android_ripple={{color: 'rgba(255,255,255,0.08)'}}
                 accessibilityRole="button">
                 <LinearGradient
@@ -166,13 +148,6 @@ const OnboardingStepFour = () => {
                   </View>
                   <Text center white semibold size={sizes.p - 1}>
                     {option.label}
-                  </Text>
-                  <Text
-                    center
-                    size={sizes.s - 1}
-                    color="rgba(255,255,255,0.72)"
-                    marginTop={4}>
-                    {option.description}
                   </Text>
                 </LinearGradient>
               </Pressable>
@@ -224,11 +199,8 @@ const styles = StyleSheet.create({
     width: '48%',
     marginBottom: 14,
   },
-  cardWrapperFull: {
-    width: '100%',
-  },
   card: {
-    minHeight: 110,
+    minHeight: 100,
     borderRadius: 18,
     paddingVertical: 14,
     paddingHorizontal: 14,
@@ -255,5 +227,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OnboardingStepFour;
-
+export default OnboardingStepSix;

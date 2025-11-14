@@ -14,6 +14,10 @@ import {
   OnboardingStepTwo,
   OnboardingStepThree,
   OnboardingStepFour,
+  OnboardingStepFive,
+  OnboardingStepSix,
+  OnboardingStepSeven,
+  OnboardingStepEight,
 } from '../screens';
 
 const RootStack = createStackNavigator();
@@ -45,6 +49,22 @@ const OnboardingNavigator = () => (
     <OnboardingStack.Screen
       name="OnboardingStepFour"
       component={OnboardingStepFour}
+    />
+    <OnboardingStack.Screen
+      name="OnboardingStepFive"
+      component={OnboardingStepFive}
+    />
+    <OnboardingStack.Screen
+      name="OnboardingStepSix"
+      component={OnboardingStepSix}
+    />
+    <OnboardingStack.Screen
+      name="OnboardingStepSeven"
+      component={OnboardingStepSeven}
+    />
+    <OnboardingStack.Screen
+      name="OnboardingStepEight"
+      component={OnboardingStepEight}
     />
   </OnboardingStack.Navigator>
 );

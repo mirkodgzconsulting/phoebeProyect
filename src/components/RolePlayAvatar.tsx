@@ -1,6 +1,6 @@
-import React, {useEffect, useRef} from 'react';
-import {Animated, Image, StyleSheet, View} from 'react-native';
-import {Video, ResizeMode} from 'expo-av';
+import React, {useCallback, useEffect, useRef} from 'react';
+import {Animated, StyleSheet, View} from 'react-native';
+import {AVPlaybackStatus, ResizeMode, Video} from 'expo-av';
 
 type RolePlayAvatarMode = 'speaking' | 'listening' | 'idle';
 
@@ -10,38 +10,51 @@ type RolePlayAvatarProps = {
 };
 
 const AVATAR_SPEAKING = require('../../assets/habla.mp4');
-const AVATAR_STATIC = require('../../assets/imageneavatarestatico.jpeg');
+const IDLE_FRAME_MS = 220;
 
 const RolePlayAvatar = ({mode, size = 260}: RolePlayAvatarProps) => {
-  const tutorOpacity = useRef(new Animated.Value(mode === 'speaking' ? 1 : 0))
-    .current;
-  const silentOpacity = useRef(
-    new Animated.Value(mode === 'speaking' ? 0 : 1),
-  ).current;
   const bounce = useRef(new Animated.Value(0)).current;
   const speakingRef = useRef<Video | null>(null);
+  const hasLoadedVideoRef = useRef(false);
+
+  const syncVideoWithMode = useCallback(
+    async (targetMode: RolePlayAvatarMode) => {
+      const video = speakingRef.current;
+      if (!video) {
+        return;
+      }
+
+      try {
+        const status = await video.getStatusAsync();
+        if (!status.isLoaded) {
+          return;
+        }
+
+        if (targetMode === 'speaking') {
+          await video.setPositionAsync(0);
+          await video.playAsync();
+        } else {
+          if (status.isPlaying) {
+            await video.pauseAsync();
+          }
+          if (IDLE_FRAME_MS >= 0) {
+            await video.setPositionAsync(IDLE_FRAME_MS);
+          }
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('Avatar video sync error', error);
+        }
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(tutorOpacity, {
-        toValue: mode === 'speaking' ? 1 : 0,
-        duration: 180,
-        useNativeDriver: true,
-      }),
-      Animated.timing(silentOpacity, {
-        toValue: mode === 'speaking' ? 0 : 1,
-        duration: 180,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    if (mode === 'speaking') {
-      speakingRef.current?.setPositionAsync(0);
-      speakingRef.current?.playAsync().catch(() => {});
-    } else {
-      speakingRef.current?.stopAsync().catch(() => {});
+    if (hasLoadedVideoRef.current) {
+      syncVideoWithMode(mode);
     }
-  }, [mode, silentOpacity, tutorOpacity]);
+  }, [mode, syncVideoWithMode]);
 
   useEffect(() => {
     Animated.loop(
@@ -80,6 +93,23 @@ const RolePlayAvatar = ({mode, size = 260}: RolePlayAvatarProps) => {
   const borderRadius = size * 0.16;
   const videoStyle = styles.video;
 
+  const handlePlaybackStatusUpdate = useCallback(
+    (status: AVPlaybackStatus) => {
+      if (!status.isLoaded) {
+        if (status.error && __DEV__) {
+          console.warn('RolePlay avatar playback error', status.error);
+        }
+        return;
+      }
+
+      if (!hasLoadedVideoRef.current) {
+        hasLoadedVideoRef.current = true;
+        syncVideoWithMode(mode);
+      }
+    },
+    [mode, syncVideoWithMode],
+  );
+
   return (
     <Animated.View
       style={[
@@ -91,33 +121,18 @@ const RolePlayAvatar = ({mode, size = 260}: RolePlayAvatarProps) => {
         },
         animatedContainerStyle,
       ]}>
-      <Animated.View
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFillObject, {opacity: silentOpacity}]}>
-        <Image source={AVATAR_STATIC} style={styles.image} resizeMode="cover" />
-      </Animated.View>
-
-      <Animated.View
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFillObject, {opacity: tutorOpacity}]}>
-        <Video
-          source={AVATAR_SPEAKING}
-          style={styles.video}
-          resizeMode={ResizeMode.COVER}
-          ref={(ref) => {
-            speakingRef.current = ref;
-          }}
-          shouldPlay
-          isLooping
-          isMuted
-          onPlaybackStatusUpdate={(status) => {
-            if (!status.isLoaded && status.error && __DEV__) {
-              console.warn('Speaking avatar playback error', status.error);
-            }
-          }}
-        />
-      </Animated.View>
-
+      <Video
+        ref={(ref) => {
+          speakingRef.current = ref;
+        }}
+        source={AVATAR_SPEAKING}
+        style={styles.video}
+        resizeMode={ResizeMode.CONTAIN}
+        shouldPlay={false}
+        isLooping
+        isMuted
+        onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
+      />
       <View
         style={[
           styles.ring,
@@ -134,10 +149,10 @@ const RolePlayAvatar = ({mode, size = 260}: RolePlayAvatarProps) => {
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    backgroundColor: '#0B3D4D',
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
+    padding: 0,
     shadowColor: 'rgba(0,0,0,0.55)',
     shadowOpacity: 0.35,
     shadowRadius: 22,
@@ -148,14 +163,10 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
   ring: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
-    borderColor: 'rgba(96,203,88,0.28)',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
 });
 

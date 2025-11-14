@@ -12,7 +12,7 @@ import {
   BrandActionButton,
 } from '../components/';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 8;
 const CURRENT_STEP = 1;
 
 const PURPOSES = [
@@ -25,13 +25,13 @@ const PURPOSES = [
   {
     id: 'education',
     label: 'Sostenere i miei studi',
-    emoji: '📚',
+    emoji: '🎓',
     activeGradient: ['#A18CD1', '#FBC2EB'] as const,
   },
   {
     id: 'relocation',
     label: 'Trasferirmi in un altro paese',
-    emoji: '🌍',
+    emoji: '✈️',
     activeGradient: ['#43E97B', '#38F9D7'] as const,
   },
   {
@@ -45,6 +45,18 @@ const PURPOSES = [
     label: 'Prepararmi a viaggiare',
     emoji: '🧳',
     activeGradient: ['#8EC5FC', '#E0C3FC'] as const,
+  },
+  {
+    id: 'confidence',
+    label: 'Migliorare la mia sicurezza nel parlare',
+    emoji: '🗣️',
+    activeGradient: ['#F6D365', '#FDA085'] as const,
+  },
+  {
+    id: 'personal-growth',
+    label: 'Aggiornare le mie competenze linguistiche per piacere personale',
+    emoji: '📖',
+    activeGradient: ['#7F7CFF', '#00F5FF'] as const,
     fullWidth: true,
   },
 ];
@@ -54,7 +66,7 @@ const CARD_BORDER_INACTIVE = 'rgba(255,255,255,0.16)';
 const CARD_BORDER_ACTIVE = 'rgba(255,255,255,0.36)';
 
 const Onboarding = () => {
-  const {colors, sizes} = useTheme();
+  const {sizes} = useTheme();
   const {t} = useTranslation();
   const navigation = useNavigation<any>();
 
@@ -92,7 +104,7 @@ const Onboarding = () => {
             colors={PROGRESS_GRADIENT}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 0}}
-            style={[styles.progressFill, {width: `${progress}%`}]} // 4 steps => 25% cada uno
+            style={[styles.progressFill, {width: `${progress}%`}]}
           />
         </View>
       </View>
@@ -120,7 +132,7 @@ const Onboarding = () => {
               center
               size={sizes.s}
               color="rgba(255,255,255,0.76)">
-              Personalizzeremo il tuo piano in base ai tuoi obiettivi.
+              Personalizziamo il tuo piano in base ai tuoi obiettivi.
             </Text>
           </Block>
 
@@ -177,7 +189,7 @@ const Onboarding = () => {
           {/* Botón CONTINUAR debajo de las opciones */}
           <Block marginTop={sizes.l} marginBottom={sizes.m}>
             <BrandActionButton
-               label={t('common.continue') || 'Continua'}
+              label={t('common.continue') || 'Continua'}
               onPress={handleContinue}
               disabled={continueDisabled}
             />

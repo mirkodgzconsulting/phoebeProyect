@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {Pressable, StyleSheet, View} from 'react-native';
+import {Pressable, StyleSheet, TextInput, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useNavigation} from '@react-navigation/native';
 
@@ -7,59 +7,68 @@ import {useTheme, useTranslation} from '../hooks/';
 import {
   AssistantOrb,
   Block,
-  Text,
-  BrandBackground,
   BrandActionButton,
+  BrandBackground,
+  Text,
 } from '../components/';
 
 const TOTAL_STEPS = 8;
-const CURRENT_STEP = 4;
+const CURRENT_STEP = 5;
 
-type LearningStyleOption = {
+type ChallengeOption = {
   id: string;
   label: string;
-  description: string;
+  description?: string;
   emoji: string;
   activeGradient: readonly [string, string];
   fullWidth?: boolean;
+  hasInput?: boolean;
 };
 
-const OPTIONS: LearningStyleOption[] = [
+const OPTIONS: ChallengeOption[] = [
   {
-    id: 'conversations',
-    label: 'Conversazioni pratiche',
-    description: 'Dialoghi realistici per imparare parlando.',
-    emoji: '🗨️',
+    id: 'time',
+    label: 'Mancanza di tempo',
+    emoji: '⏰',
     activeGradient: ['#43E97B', '#38F9D7'],
   },
   {
-    id: 'mini-lessons',
-    label: 'Mini-lezioni con spiegazioni chiare',
-    description: 'Brevi spiegazioni guidate passo dopo passo.',
-    emoji: '📚',
+    id: 'consistency',
+    label: 'Mancanza di costanza o motivazione',
+    emoji: '📉',
+    activeGradient: ['#F78CA0', '#F9748F'],
+  },
+  {
+    id: 'anxiety',
+    label: 'Difficoltà nel parlare senza ansia',
+    emoji: '😬',
     activeGradient: ['#A18CD1', '#FBC2EB'],
   },
   {
-    id: 'games',
-    label: 'Giochi e quiz',
-    description: 'Sfide divertenti per memorizzare più in fretta.',
-    emoji: '🎯',
-    activeGradient: ['#F6D365', '#FDA085'],
-  },
-  {
-    id: 'repetition',
-    label: 'Ripetizione e memorizzazione',
-    description: 'Routine e ripassi per fissare i concetti.',
-    emoji: '🔁',
+    id: 'understanding',
+    label: 'Difficoltà nel capire gli altri quando parlano',
+    emoji: '👂',
     activeGradient: ['#4FACFE', '#00F2FE'],
   },
   {
-    id: 'feedback',
-    label: 'Feedback e correzioni dal tutor',
-    description: 'Indicazioni personalizzate per migliorare subito.',
-    emoji: '✅',
+    id: 'study-method',
+    label: 'Non so come studiare in modo efficace',
+    emoji: '🤷‍♀️',
+    activeGradient: ['#F6D365', '#FDA085'],
+  },
+  {
+    id: 'fear',
+    label: 'Ho paura di sbagliare',
+    emoji: '⚠️',
     activeGradient: ['#7F7CFF', '#00F5FF'],
+  },
+  {
+    id: 'other',
+    label: 'Altro (campo libero)',
+    emoji: '✍️',
+    activeGradient: ['#8EC5FC', '#E0C3FC'],
     fullWidth: true,
+    hasInput: true,
   },
 ];
 
@@ -68,34 +77,54 @@ const CARD_BORDER_INACTIVE = 'rgba(255,255,255,0.18)';
 const CARD_BORDER_ACTIVE = 'rgba(255,255,255,0.38)';
 const PROGRESS_GRADIENT = ['#0B3D4D', '#60CB58'] as const;
 
-const OnboardingStepFour = () => {
+const OnboardingStepFive = () => {
   const navigation = useNavigation<any>();
   const {sizes} = useTheme();
   const {t} = useTranslation();
 
   const [selected, setSelected] = useState<string[]>([]);
+  const [otherText, setOtherText] = useState('');
 
   const progress = useMemo(
     () => Math.min((CURRENT_STEP / TOTAL_STEPS) * 100, 100),
     [],
   );
 
-  const handleToggle = useCallback((option: LearningStyleOption) => {
-    setSelected(prev =>
-      prev.includes(option.id)
-        ? prev.filter(item => item !== option.id)
-        : [...prev, option.id],
-    );
-  }, []);
+  const handleToggle = useCallback(
+    (option: ChallengeOption) => {
+      const isActive = selected.includes(option.id);
+
+      if (isActive) {
+        setSelected(prev => prev.filter(item => item !== option.id));
+        if (option.id === 'other') {
+          setOtherText('');
+        }
+      } else {
+        setSelected(prev => [...prev, option.id]);
+      }
+    },
+    [selected],
+  );
 
   const handleContinue = useCallback(() => {
-    if (!selected.length) {
+    if (selected.length === 0) {
       return;
     }
-    navigation.navigate('OnboardingStepFive');
-  }, [navigation, selected.length]);
+    if (selected.includes('other') && !otherText.trim()) {
+      return;
+    }
+    navigation.navigate('OnboardingStepSix');
+  }, [navigation, otherText, selected]);
 
-  const continueDisabled = useMemo(() => selected.length === 0, [selected]);
+  const continueDisabled = useMemo(() => {
+    if (selected.length === 0) {
+      return true;
+    }
+    if (selected.includes('other') && !otherText.trim()) {
+      return true;
+    }
+    return false;
+  }, [otherText, selected]);
 
   return (
     <BrandBackground>
@@ -125,10 +154,10 @@ const OnboardingStepFour = () => {
           marginHorizontal={sizes.sm}
           marginBottom={sizes.m}>
           <Text h4 center white marginBottom={sizes.xs}>
-            Come preferisci imparare?
+            Cosa ti rende più difficile raggiungere il tuo obiettivo con l’inglese?
           </Text>
           <Text center size={sizes.s} color="rgba(255,255,255,0.76)">
-            Scegli il metodo che ti aiuta di più.
+            Conoscere i tuoi ostacoli ci aiuta a creare un percorso su misura per te.
           </Text>
         </Block>
 
@@ -167,13 +196,16 @@ const OnboardingStepFour = () => {
                   <Text center white semibold size={sizes.p - 1}>
                     {option.label}
                   </Text>
-                  <Text
-                    center
-                    size={sizes.s - 1}
-                    color="rgba(255,255,255,0.72)"
-                    marginTop={4}>
-                    {option.description}
-                  </Text>
+                  {option.hasInput && isActive ? (
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Scrivi qui il tuo ostacolo"
+                      placeholderTextColor="rgba(255,255,255,0.65)"
+                      value={otherText}
+                      onChangeText={setOtherText}
+                      multiline
+                    />
+                  ) : null}
                 </LinearGradient>
               </Pressable>
             );
@@ -253,7 +285,16 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 26,
   },
+  input: {
+    marginTop: 8,
+    width: '100%',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(11,61,77,0.32)',
+    color: '#FFFFFF',
+    textAlignVertical: 'top',
+  },
 });
 
-export default OnboardingStepFour;
-
+export default OnboardingStepFive;
