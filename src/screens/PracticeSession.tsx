@@ -1,6 +1,7 @@
 import React, {useEffect, useState, useMemo, useRef, useCallback} from 'react';
-import {ScrollView} from 'react-native';
+import {ScrollView, View} from 'react-native';
 import {DrawerActions, useNavigation, useRoute} from '@react-navigation/native';
+import {Ionicons} from '@expo/vector-icons';
 import {
   getRecordingPermissionsAsync,
   requestRecordingPermissionsAsync,
@@ -17,10 +18,6 @@ import {
   type AssistantOrbState,
   BrandActionButton,
   BrandBackground,
-  BrandChip,
-  BrandProgressBar,
-  BrandSectionHeader,
-  BrandSurface,
   Button,
   Image,
   RolePlayAvatar,
@@ -46,8 +43,19 @@ type PracticeSessionRouteParams = {
   levelId?: RolePlayLevelId;
 };
 
+type ChatMessageType = 'tutor' | 'user' | 'feedback' | 'system';
+
+type ChatMessage = {
+  id: string;
+  type: ChatMessageType;
+  text: string;
+  timestamp: Date;
+  verdict?: PracticeVerdict;
+  isPlaying?: boolean;
+};
+
 const PracticeSession = () => {
-  const {sizes, icons, colors, gradients, assets} = useTheme();
+  const {sizes, colors, gradients, assets} = useTheme();
   const {practice, user} = useData();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -96,6 +104,10 @@ const PracticeSession = () => {
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const speakingTimeout = useRef<NodeJS.Timeout | null>(null);
   const voiceSoundRef = useRef<Audio.Sound | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const chatScrollViewRef = useRef<ScrollView>(null);
+
+  const bottomButtonHeight = sizes.l * 1.1;
 
   const studentFullName = useMemo(() => {
     const rawName =
@@ -133,25 +145,9 @@ const PracticeSession = () => {
   // Extraer solo el nombre del tutor (sin "Tutor IA ·")
   const tutorNameOnly = useMemo(() => {
     const fullName = practice.tutorName || '';
-    // Si contiene "·", tomar la parte después del separador
     const parts = fullName.split('·');
     return parts.length > 1 ? parts[parts.length - 1].trim() : fullName;
   }, [practice.tutorName]);
-
-  const totalTurns = conversationPairs.length;
-  const currentTurnNumber =
-    totalTurns > 0 ? Math.min(interviewIndex + 1, totalTurns) : 0;
-  const totalTurnsDisplay = Math.max(totalTurns, 1);
-
-  const triggerSpeakingAnimation = useCallback(() => {
-    if (speakingTimeout.current) {
-      clearTimeout(speakingTimeout.current);
-    }
-    setAssistantState('speaking');
-    speakingTimeout.current = setTimeout(() => {
-      setAssistantState('idle');
-    }, 2400);
-  }, []);
 
   const sessionProgress = useMemo(() => {
     const total = Math.max(conversationPairs.length, 1);
@@ -364,12 +360,40 @@ const PracticeSession = () => {
     [stopVoicePlayback],
   );
 
+  // Agregar mensaje al chat
+  const addChatMessage = useCallback(
+    (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
+      const newMessage: ChatMessage = {
+        ...message,
+        id: `msg-${Date.now()}-${Math.random()}`,
+        timestamp: new Date(),
+      };
+      setChatMessages((prev) => [...prev, newMessage]);
+
+      setTimeout(() => {
+        chatScrollViewRef.current?.scrollToEnd({animated: true});
+      }, 100);
+    },
+    [],
+  );
+
+  const triggerSpeakingAnimation = useCallback(() => {
+    if (speakingTimeout.current) {
+      clearTimeout(speakingTimeout.current);
+    }
+    setAssistantState('speaking');
+    speakingTimeout.current = setTimeout(() => {
+      setAssistantState('idle');
+    }, 2400);
+  }, []);
+
   useEffect(() => {
     if (!shouldPlayGreeting || !currentTutorPrompt) return;
 
     const timeoutId = setTimeout(() => {
       const greetingMessage = currentTutorPrompt;
       setShouldPlayGreeting(false);
+
       triggerSpeakingAnimation();
       playVoiceMessage(greetingMessage).catch(() => {
         setShouldPlayGreeting(true);
@@ -380,7 +404,6 @@ const PracticeSession = () => {
   }, [
     shouldPlayGreeting,
     currentTutorPrompt,
-    studentFirstName,
     playVoiceMessage,
     triggerSpeakingAnimation,
   ]);
@@ -408,6 +431,11 @@ const PracticeSession = () => {
         );
       }
 
+      addChatMessage({
+        type: 'user',
+        text: transcriptText,
+      });
+
       const feedback = await requestPracticeFeedback({
         transcript: transcriptText,
         targetSentence: expectedUserSample,
@@ -421,6 +449,7 @@ const PracticeSession = () => {
 
       setAnalysisSummary(feedback.summary ?? null);
       setAnalysisVerdict(feedback.verdict ?? null);
+
       const suggestionPool =
         feedback.verdict === 'correct'
           ? ['Good! You used the past tense correctly.']
@@ -431,11 +460,19 @@ const PracticeSession = () => {
       const randomSuggestion =
         suggestionPool[Math.floor(Math.random() * suggestionPool.length)];
       setDynamicFeedback(randomSuggestion);
-      triggerSpeakingAnimation();
-      playVoiceMessage(
+
+      const feedbackText =
         feedback.summary ??
-          `Analisi completata, ${studentFirstName}. Ottimo lavoro! Continua a praticare.`,
-      );
+        `Analisi completata, ${studentFirstName}. Ottimo lavoro! Continua a praticare.`;
+
+      addChatMessage({
+        type: 'feedback',
+        text: feedbackText,
+        verdict: feedback.verdict ?? undefined,
+      });
+
+      triggerSpeakingAnimation();
+      playVoiceMessage(feedbackText);
     } catch (feedbackError) {
       setAssistantState('idle');
       setDynamicFeedback(null);
@@ -444,6 +481,12 @@ const PracticeSession = () => {
           ? feedbackError.message
           : 'La valutazione non è riuscita, riprova.';
       setProcessingError(message);
+
+      addChatMessage({
+        type: 'system',
+        text: message,
+      });
+
       if (__DEV__) {
         console.warn('Practice feedback error', feedbackError);
       }
@@ -483,17 +526,6 @@ const PracticeSession = () => {
     }
   };
 
-  const micStatusLabel =
-    micPermission !== 'granted'
-      ? 'Autorizzazione microfono in attesa'
-      : isRecording
-      ? 'Registrazione in corso…'
-      : isProcessing
-      ? 'Analisi in corso…'
-      : isPlayingVoice
-      ? 'Riproduzione del feedback…'
-      : 'Pronto per praticare';
-
   const avatarMode = (() => {
     if (isPlayingVoice || assistantState === 'speaking') {
       return 'speaking' as const;
@@ -520,12 +552,82 @@ const PracticeSession = () => {
     setDynamicFeedback(null);
     setVoiceError(null);
     setAssistantState('idle');
+    setChatMessages([]);
   }, [conversationPairs.length, stopVoicePlayback]);
+
+  const ChatMessageBubble = ({message}: {message: ChatMessage}) => {
+    const isTutor = message.type === 'tutor';
+    const isUser = message.type === 'user';
+    const isFeedback = message.type === 'feedback';
+    const isSystem = message.type === 'system';
+
+    if (isSystem) {
+      return (
+        <Block align="center" marginVertical={sizes.xs}>
+          <Text size={sizes.p - 2} color="rgba(255,255,255,0.5)" center>
+            {message.text}
+          </Text>
+        </Block>
+      );
+    }
+
+    const alignLeft = isTutor || isFeedback;
+
+    return (
+      <Block
+        row
+        justify={alignLeft ? 'flex-start' : 'flex-end'}
+        marginBottom={sizes.sm}
+        style={{paddingHorizontal: sizes.xs}}>
+        <Block
+          style={{
+            paddingHorizontal: sizes.padding,
+            paddingVertical: sizes.sm,
+            backgroundColor: alignLeft
+              ? 'rgba(255,255,255,0.15)'
+              : 'rgba(96,203,88,0.3)',
+            borderTopLeftRadius: alignLeft ? sizes.xs : sizes.md,
+            borderTopRightRadius: alignLeft ? sizes.md : sizes.xs,
+            borderBottomLeftRadius: sizes.md,
+            borderBottomRightRadius: sizes.md,
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 1},
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+            elevation: 2,
+          }}>
+          {isFeedback && message.verdict && (
+            <Text
+              semibold
+              marginBottom={sizes.xs}
+              size={sizes.p - 2}
+              color={
+                message.verdict === 'correct'
+                  ? 'rgba(111,255,200,0.9)'
+                  : colors.danger ?? '#FF6B6B'
+              }>
+              {message.verdict === 'correct'
+                ? '✓ Pronuncia accettabile'
+                : '⚠ Pronuncia da migliorare'}
+            </Text>
+          )}
+          <Text
+            white
+            size={sizes.p - 1}
+            style={{
+              lineHeight: sizes.p + 4,
+            }}>
+            {message.text}
+          </Text>
+        </Block>
+      </Block>
+    );
+  };
 
   return (
     <BrandBackground>
       <Block flex={1}>
-        {/* HEADER MINIMALISTA */}
+        {/* HEADER */}
         <Block
           row
           justify="flex-start"
@@ -551,7 +653,7 @@ const PracticeSession = () => {
           </Button>
         </Block>
 
-        {/* BOTONES DE NIVEL FLOTANTES - VERTICALES A LA IZQUIERDA (SOLO ICONOS) */}
+        {/* BOTONES DE NIVEL FLOTANTES */}
         <Block
           style={{
             position: 'absolute',
@@ -560,16 +662,15 @@ const PracticeSession = () => {
             zIndex: 10,
           }}>
           <Block>
-            {scenarioConfig.levels.map((level, index) => {
+            {scenarioConfig.levels.map((level) => {
               const isActive = activeLevelId === level.id;
-              // Iconos para cada nivel
               const levelIcons: Record<string, string> = {
-                beginner: '🟡', // Amarillo - Básico
-                intermediate: '🟠', // Naranja - Intermedio
-                advanced: '🟢', // Verde - Avanzado
+                beginner: '🟡',
+                intermediate: '🟠',
+                advanced: '🟢',
               };
               const levelIcon = levelIcons[level.id] || '●';
-              
+
               return (
                 <Button
                   key={level.id}
@@ -614,13 +715,11 @@ const PracticeSession = () => {
           }}
           keyboardShouldPersistTaps="handled">
           <Block flex={1} justify="space-between">
-            {/* VISTA TIPO VIDEOLLAMADA */}
+            {/* AVATAR */}
             <Block align="center" marginTop={sizes.sm}>
-              {/* Contenedor del avatar con nombre dentro */}
               <Block style={{position: 'relative'}}>
                 <RolePlayAvatar mode={avatarMode} size={300} />
-                
-                {/* Nombre del tutor - DENTRO DEL VIDEO, EN LA PARTE INFERIOR */}
+
                 <Block
                   style={{
                     position: 'absolute',
@@ -644,71 +743,10 @@ const PracticeSession = () => {
                 </Block>
               </Block>
 
-              {/* Micrófono - JUSTO DEBAJO DEL AVATAR */}
-              <Block align="center" marginTop={sizes.sm}>
-                <Button
-                  flex={0}
-                  radius={sizes.l * 0.55}
-                  color={
-                    isRecording
-                      ? 'rgba(255,107,107,0.25)'
-                      : 'rgba(96,203,88,0.25)'
-                  }
-                  style={{
-                    width: sizes.l * 0.95,
-                    height: sizes.l * 0.95,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1.5,
-                    borderColor: isRecording
-                      ? 'rgba(255,107,107,0.7)'
-                      : 'rgba(96,203,88,0.7)',
-                  }}
-                  onPress={handleToggleRecordingWrapper}
-                  disabled={isProcessing || isPlayingVoice}>
-                  <Block
-                    width={sizes.l * 0.7}
-                    height={sizes.l * 0.7}
-                    radius={sizes.l * 0.5}
-                    gradient={
-                      isRecording ? gradients.warning : gradients.primary
-                    }
-                    align="center"
-                    justify="center">
-                    <Image
-                      source={icons.chat}
-                      width={sizes.sm}
-                      height={sizes.sm}
-                      color={colors.white}
-                      radius={0}
-                    />
-                  </Block>
-                </Button>
-              </Block>
-              
-              {/* Texto "Tocca per parlare" */}
-              <Text
-                marginTop={sizes.xs}
-                color="rgba(255,255,255,0.85)"
-                semibold
-                size={sizes.p - 1}
-                center>
-                {micPermission !== 'granted'
-                  ? 'Consenti microfono'
-                  : isRecording
-                  ? 'Registrando…'
-                  : isProcessing
-                  ? 'Analisi in corso...'
-                  : isPlayingVoice
-                  ? 'Riproduzione feedback...'
-                  : 'Tocca per parlare'}
-              </Text>
-
-              {/* Barra de progreso - DELGADA, DEBAJO DEL ESTADO */}
               <Block
                 style={{
                   width: '60%',
-                  marginTop: sizes.xs,
+                  marginTop: sizes.sm,
                   alignSelf: 'center',
                 }}>
                 <Block
@@ -735,123 +773,256 @@ const PracticeSession = () => {
               ) : null}
             </Block>
 
-            {/* CONTROLES INFERIORES */}
-            <Block marginTop={sizes.sm}>
-              {/* Turno */}
-              <Block marginBottom={sizes.sm} align="center">
-                <Text color="rgba(255,255,255,0.76)" size={sizes.p - 2} center>
-                  Turno {currentTurnNumber > 0 ? currentTurnNumber : '—'} di{' '}
-                  {totalTurnsDisplay}
-                </Text>
-                <Text white semibold size={sizes.p} numberOfLines={2} marginTop={sizes.xs} center>
-                  {currentTutorPrompt || 'Preparando il prossimo turno...'}
-                </Text>
-              </Block>
+            {/* CHAT */}
+            <Block marginTop={0} style={{flex: 1, minHeight: 200}}>
+              <ScrollView
+                ref={chatScrollViewRef}
+                contentContainerStyle={{
+                  paddingHorizontal: sizes.padding,
+                  paddingVertical: sizes.sm,
+                  paddingBottom: sizes.l,
+                }}
+                keyboardShouldPersistTaps="handled"
+                onContentSizeChange={() => {
+                  chatScrollViewRef.current?.scrollToEnd({animated: true});
+                }}>
+                {currentTutorPrompt && (
+                  <Block row justify="flex-start" marginBottom={sizes.sm}>
+                    <Block
+                      style={{
+                        paddingHorizontal: sizes.padding,
+                        paddingVertical: sizes.sm,
+                        backgroundColor: 'rgba(255,255,255,0.15)',
+                        borderTopLeftRadius: sizes.xs,
+                        borderTopRightRadius: sizes.md,
+                        borderBottomLeftRadius: sizes.md,
+                        borderBottomRightRadius: sizes.md,
+                        maxWidth: '75%',
+                        shadowColor: '#000',
+                        shadowOffset: {width: 0, height: 1},
+                        shadowOpacity: 0.2,
+                        shadowRadius: 2,
+                        elevation: 2,
+                      }}>
+                      <Text
+                        white
+                        size={sizes.p - 1}
+                        style={{lineHeight: sizes.p + 4}}>
+                        {currentTutorPrompt}
+                      </Text>
+                    </Block>
+                  </Block>
+                )}
 
-              {/* Botones secundarios */}
-              <Block align="center" marginBottom={sizes.sm}>
-                <Block row justify="center" style={{width: '100%'}}>
+                {chatMessages
+                  .filter(
+                    (m) =>
+                      m.type === 'user' ||
+                      m.type === 'feedback' ||
+                      m.type === 'system',
+                  )
+                  .map((message) => (
+                    <ChatMessageBubble key={message.id} message={message} />
+                  ))}
+
+                {isProcessing && (
+                  <Block row justify="flex-start" marginBottom={sizes.sm}>
+                    <Block
+                      style={{
+                        paddingHorizontal: sizes.padding,
+                        paddingVertical: sizes.sm,
+                        backgroundColor: 'rgba(255,255,255,0.12)',
+                        borderTopLeftRadius: sizes.xs,
+                        borderTopRightRadius: sizes.md,
+                        borderBottomLeftRadius: sizes.md,
+                        borderBottomRightRadius: sizes.md,
+                        maxWidth: '75%',
+                      }}>
+                      <Text white size={sizes.p - 1}>
+                        Analisi in corso...
+                      </Text>
+                    </Block>
+                  </Block>
+                )}
+              </ScrollView>
+            </Block>
+
+            {/* BARRA INFERIOR: Esempio + Micrófono */}
+            <Block
+              style={{
+                paddingHorizontal: sizes.padding,
+                paddingVertical: sizes.md,
+                borderTopWidth: 1,
+                borderTopColor: 'rgba(255,255,255,0.1)',
+                backgroundColor: 'rgba(0,0,0,0.3)',
+              }}>
+              <View
+                style={{
+                  width: '100%',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}>
+                {/* Contenedor SIEMPRE presente para mantener ancho */}
+                <View style={{flex: 1, marginRight: sizes.xs}}>
+                  {expectedUserSample ? (
+                    <Button
+                      radius={sizes.md}
+                      color="transparent"
+                      activeOpacity={1}
+                      disabled={isRecording || isProcessing}
+                      style={{
+                        width: '100%',
+                        height: bottomButtonHeight,
+                        padding: 0,
+                        borderWidth: 0,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                        opacity: isRecording || isProcessing ? 0.6 : 1,
+                      }}
+                      onPress={() => {
+                        if (isRecording || isProcessing) return;
+                        addChatMessage({
+                          type: 'user',
+                          text: expectedUserSample,
+                        });
+                      }}>
+                      <Block
+                        width="100%"
+                        height="100%"
+                        radius={sizes.md}
+                        gradient={gradients.secondary}
+                        align="center"
+                        justify="center"
+                        style={{
+                          paddingHorizontal: sizes.sm,
+                          overflow: 'hidden',
+                        }}>
+                        <Text
+                          white
+                          size={(sizes.s - 1) * 2}
+                          semibold
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                          style={{
+                            lineHeight: (sizes.s - 1) * 2 * 1.2,
+                            includeFontPadding: false,
+                            textAlignVertical: 'center',
+                          }}>
+                          💡 Esempio
+                        </Text>
+                      </Block>
+                    </Button>
+                  ) : null}
+                </View>
+
+                {/* Micrófono */}
+                <View style={{flex: 1}}>
+                  <Button
+                    radius={sizes.md}
+                    color="transparent"
+                    activeOpacity={1}
+                    style={{
+                      width: '100%',
+                      height: bottomButtonHeight,
+                      padding: 0,
+                      borderWidth: 0,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                    }}
+                    onPress={handleToggleRecordingWrapper}
+                    disabled={isProcessing || isPlayingVoice}>
+                    <Block
+                      width="100%"
+                      height="100%"
+                      radius={sizes.md}
+                      gradient={
+                        isRecording ? gradients.warning : gradients.primary
+                      }
+                      align="center"
+                      justify="center"
+                      style={{
+                        paddingHorizontal: sizes.sm,
+                        overflow: 'hidden',
+                      }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '100%',
+                          overflow: 'hidden',
+                        }}>
+                        <Ionicons
+                          name="mic"
+                          size={sizes.sm * 2}
+                          color="white"
+                          style={{
+                            marginRight: sizes.xs,
+                          }}
+                        />
+
+                        <Text
+                          white
+                          size={(sizes.s - 1) * 2}
+                          semibold
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                          style={{
+                            flexShrink: 1,
+                            lineHeight: (sizes.s - 1) * 2 * 1.2,
+                            includeFontPadding: false,
+                            textAlignVertical: 'center',
+                          }}>
+                          {micPermission !== 'granted'
+                            ? 'Consenti microfono'
+                            : isRecording
+                            ? 'Registrando…'
+                            : isProcessing
+                            ? 'Analisi in corso...'
+                            : isPlayingVoice
+                            ? 'Riproduzione feedback...'
+                            : 'Tocca'}
+                        </Text>
+                      </View>
+                    </Block>
+                  </Button>
+                </View>
+              </View>
+
+              {/* Botones de acción */}
+              <Block row justify="center" marginTop={sizes.xs}>
+                <BrandActionButton
+                  label="PROSSIMO TURNO"
+                  onPress={goToNextInterviewSentence}
+                  disabled={
+                    isRecording ||
+                    isProcessing ||
+                    isPlayingVoice ||
+                    conversationPairs.length === 0
+                  }
+                  style={{flex: 1, maxWidth: 200, marginRight: sizes.xs}}
+                />
+                {analysisSummary && (
                   <BrandActionButton
-                    label="Prossimo turno"
-                    onPress={goToNextInterviewSentence}
-                    disabled={
-                      isRecording ||
-                      isProcessing ||
-                      isPlayingVoice ||
-                      conversationPairs.length === 0
-                    }
+                    label={isPlayingVoice ? 'Riproduzione...' : 'Feedback'}
+                    onPress={() => playVoiceMessage(analysisSummary)}
+                    disabled={isPlayingVoice}
                     style={{flex: 1, maxWidth: 200}}
                   />
-                  {analysisSummary ? (
-                    <BrandActionButton
-                      label={isPlayingVoice ? 'Riproduzione...' : 'Feedback'}
-                      onPress={() => playVoiceMessage(analysisSummary)}
-                      disabled={isPlayingVoice}
-                      style={{flex: 1, maxWidth: 200, marginLeft: sizes.xs}}
-                    />
-                  ) : null}
-                </Block>
+                )}
               </Block>
 
-              {/* Feedback */}
-              {analysisSummary || dynamicFeedback || analysisVerdict ? (
-                <BrandSurface tone="neutral" style={{marginBottom: sizes.sm}}>
-                  {analysisVerdict ? (
-                    <Text
-                      semibold
-                      marginBottom={sizes.xs}
-                      color={
-                        analysisVerdict === 'correct'
-                          ? 'rgba(111,255,200,0.9)'
-                          : colors.danger ?? '#FF6B6B'
-                      }
-                      center>
-                      {analysisVerdict === 'correct'
-                        ? '✓ Pronuncia accettabile'
-                        : '⚠ Pronuncia da migliorare'}
-                    </Text>
-                  ) : null}
-                  {dynamicFeedback ? (
-                    <Text
-                      size={sizes.p - 1}
-                      color="rgba(255,255,255,0.85)"
-                      marginBottom={sizes.xs}
-                      center>
-                      {dynamicFeedback}
-                    </Text>
-                  ) : null}
-                  {analysisSummary ? (
-                    <Text size={sizes.p - 1} color="rgba(255,255,255,0.76)" center>
-                      {analysisSummary}
-                    </Text>
-                  ) : null}
-                  {voiceError ? (
-                    <Text
-                      marginTop={sizes.xs}
-                      size={sizes.p - 2}
-                      color={colors.danger ?? '#FF6B6B'}
-                      center>
-                      {voiceError}
-                    </Text>
-                  ) : null}
-                </BrandSurface>
-              ) : null}
-
-              {/* Respuesta de ejemplo */}
-              {expectedUserSample ? (
-                <BrandSurface tone="glass" style={{marginBottom: sizes.sm}}>
-                  <Text
-                    color="rgba(255,255,255,0.72)"
-                    size={sizes.p - 2}
-                    marginBottom={sizes.xs}
-                    center>
-                    Tua risposta
-                  </Text>
-                  <Text
-                    color="rgba(255,255,255,0.9)"
-                    size={sizes.p - 1}
-                    center>
-                    {expectedUserSample}
-                  </Text>
-                </BrandSurface>
-              ) : null}
-
-              {processingError ? (
+              {processingError && (
                 <Text
+                  marginTop={sizes.xs}
                   color={colors.danger ?? '#FF6B6B'}
                   size={sizes.p - 2}
-                  marginBottom={sizes.sm}
                   center>
                   {processingError}
                 </Text>
-              ) : null}
-
-              {/* Terminar sesión */}
-              <BrandActionButton
-                label="Termina sessione"
-                onPress={() => navigation.goBack()}
-                style={{marginTop: sizes.sm}}
-              />
+              )}
             </Block>
           </Block>
         </ScrollView>
@@ -861,4 +1032,3 @@ const PracticeSession = () => {
 };
 
 export default PracticeSession;
-
