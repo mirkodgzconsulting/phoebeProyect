@@ -581,8 +581,8 @@ const PracticeSession = () => {
         style={{paddingHorizontal: sizes.xs}}>
         <Block
           style={{
-            paddingHorizontal: sizes.padding,
-            paddingVertical: sizes.sm,
+            paddingHorizontal: Math.max(sizes.sm, 1.5),
+            paddingVertical: Math.max(sizes.xs, 1.5),
             backgroundColor: alignLeft
               ? 'rgba(255,255,255,0.15)'
               : 'rgba(96,203,88,0.3)',
@@ -596,6 +596,22 @@ const PracticeSession = () => {
             shadowRadius: 2,
             elevation: 2,
           }}>
+          {/* Etiqueta de nombre */}
+          {(isTutor || isUser) && (
+            <Text
+              bold
+              marginBottom={2}
+              size={sizes.p - 4}
+              color={
+                isTutor
+                  ? '#17C1E8'
+                  : '#A7A8AE'
+              }>
+              {isTutor
+                ? `${tutorNameOnly} dice:`
+                : `${studentFirstName} dice:`}
+            </Text>
+          )}
           {isFeedback && message.verdict && (
             <Text
               semibold
@@ -613,9 +629,9 @@ const PracticeSession = () => {
           )}
           <Text
             white
-            size={sizes.p - 1}
+            size={sizes.p - 2}
             style={{
-              lineHeight: sizes.p + 4,
+              lineHeight: sizes.p + 2,
             }}>
             {message.text}
           </Text>
@@ -774,13 +790,13 @@ const PracticeSession = () => {
             </Block>
 
             {/* CHAT */}
-            <Block marginTop={0} style={{flex: 1, minHeight: 200}}>
+            <Block marginTop={0} marginBottom={0} style={{flex: 1, minHeight: 200}}>
               <ScrollView
                 ref={chatScrollViewRef}
                 contentContainerStyle={{
                   paddingHorizontal: sizes.padding,
                   paddingVertical: sizes.sm,
-                  paddingBottom: sizes.l,
+                  paddingBottom: 0,
                 }}
                 keyboardShouldPersistTaps="handled"
                 onContentSizeChange={() => {
@@ -790,8 +806,8 @@ const PracticeSession = () => {
                   <Block row justify="flex-start" marginBottom={sizes.sm}>
                     <Block
                       style={{
-                        paddingHorizontal: sizes.padding,
-                        paddingVertical: sizes.sm,
+                        paddingHorizontal: Math.max(sizes.sm, 1.5),
+                        paddingVertical: Math.max(sizes.xs, 1.5),
                         backgroundColor: 'rgba(255,255,255,0.15)',
                         borderTopLeftRadius: sizes.xs,
                         borderTopRightRadius: sizes.md,
@@ -805,9 +821,16 @@ const PracticeSession = () => {
                         elevation: 2,
                       }}>
                       <Text
+                        bold
+                        marginBottom={2}
+                        size={sizes.p - 4}
+                        color="#17C1E8">
+                        {tutorNameOnly} dice:
+                      </Text>
+                      <Text
                         white
-                        size={sizes.p - 1}
-                        style={{lineHeight: sizes.p + 4}}>
+                        size={sizes.p - 2}
+                        style={{lineHeight: sizes.p + 2}}>
                         {currentTutorPrompt}
                       </Text>
                     </Block>
@@ -829,8 +852,8 @@ const PracticeSession = () => {
                   <Block row justify="flex-start" marginBottom={sizes.sm}>
                     <Block
                       style={{
-                        paddingHorizontal: sizes.padding,
-                        paddingVertical: sizes.sm,
+                        paddingHorizontal: Math.max(sizes.sm, 1.5),
+                        paddingVertical: Math.max(sizes.xs, 1.5),
                         backgroundColor: 'rgba(255,255,255,0.12)',
                         borderTopLeftRadius: sizes.xs,
                         borderTopRightRadius: sizes.md,
@@ -838,7 +861,7 @@ const PracticeSession = () => {
                         borderBottomRightRadius: sizes.md,
                         maxWidth: '75%',
                       }}>
-                      <Text white size={sizes.p - 1}>
+                      <Text white size={sizes.p - 2}>
                         Analisi in corso...
                       </Text>
                     </Block>
@@ -847,14 +870,12 @@ const PracticeSession = () => {
               </ScrollView>
             </Block>
 
-            {/* BARRA INFERIOR: Esempio + Micrófono */}
+            {/* BARRA INFERIOR: Ejemplo + Micrófono */}
             <Block
               style={{
                 paddingHorizontal: sizes.padding,
                 paddingVertical: sizes.md,
-                borderTopWidth: 1,
-                borderTopColor: 'rgba(255,255,255,0.1)',
-                backgroundColor: 'rgba(0,0,0,0.3)',
+                paddingTop: sizes.sm,
               }}>
               <View
                 style={{
@@ -862,14 +883,17 @@ const PracticeSession = () => {
                   flexDirection: 'row',
                   alignItems: 'center',
                 }}>
-                {/* Contenedor SIEMPRE presente para mantener ancho */}
-                <View style={{flex: 1, marginRight: sizes.xs}}>
-                  {expectedUserSample ? (
+                {/* Botón PROSSIMO TURNO - 70% del espacio */}
+                {!isRecording && !isProcessing && (
+                  <View style={{width: '70%', marginRight: 0}}>
                     <Button
                       radius={sizes.md}
                       color="transparent"
                       activeOpacity={1}
-                      disabled={isRecording || isProcessing}
+                      disabled={
+                        isPlayingVoice ||
+                        conversationPairs.length === 0
+                      }
                       style={{
                         width: '100%',
                         height: bottomButtonHeight,
@@ -878,22 +902,15 @@ const PracticeSession = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         overflow: 'hidden',
-                        opacity: isRecording || isProcessing ? 0.6 : 1,
                       }}
-                      onPress={() => {
-                        if (isRecording || isProcessing) return;
-                        addChatMessage({
-                          type: 'user',
-                          text: expectedUserSample,
-                        });
-                      }}>
+                      onPress={goToNextInterviewSentence}>
                       <Block
                         width="100%"
                         height="100%"
-                        radius={sizes.md}
-                        gradient={gradients.secondary}
+                        gradient={gradients.primary}
                         align="center"
                         justify="center"
+                        radius={sizes.md}
                         style={{
                           paddingHorizontal: sizes.sm,
                           overflow: 'hidden',
@@ -909,15 +926,15 @@ const PracticeSession = () => {
                             includeFontPadding: false,
                             textAlignVertical: 'center',
                           }}>
-                          💡 Esempio
+                          PROSSIMO TURNO
                         </Text>
                       </Block>
                     </Button>
-                  ) : null}
-                </View>
+                  </View>
+                )}
 
-                {/* Micrófono */}
-                <View style={{flex: 1}}>
+                {/* Micrófono - 30% del espacio */}
+                <View style={{flex: 1, maxWidth: (!isRecording && !isProcessing) ? '30%' : '100%'}}>
                   <Button
                     radius={sizes.md}
                     color="transparent"
@@ -930,41 +947,45 @@ const PracticeSession = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       overflow: 'hidden',
+                      backgroundColor: 'transparent',
                     }}
                     onPress={handleToggleRecordingWrapper}
                     disabled={isProcessing || isPlayingVoice}>
-                    <Block
-                      width="100%"
-                      height="100%"
-                      radius={sizes.md}
-                      gradient={
-                        isRecording ? gradients.warning : gradients.primary
-                      }
-                      align="center"
-                      justify="center"
+                    <View
                       style={{
+                        width: '100%',
+                        height: '100%',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         paddingHorizontal: sizes.sm,
                         overflow: 'hidden',
                       }}>
-                      <View
+                      <Ionicons
+                        name="mic"
+                        size={sizes.sm * 2}
+                        color={
+                          isRecording
+                            ? '#EA0606'
+                            : micPermission === 'granted' && !isProcessing && !isPlayingVoice
+                            ? '#60CB58'
+                            : '#FFFFFF'
+                        }
                         style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '100%',
-                          overflow: 'hidden',
-                        }}>
-                        <Ionicons
-                          name="mic"
-                          size={sizes.sm * 2}
-                          color="white"
-                          style={{
-                            marginRight: sizes.xs,
-                          }}
-                        />
+                          marginRight: sizes.xs,
+                        }}
+                      />
 
+                      {(micPermission !== 'granted' ||
+                        isRecording ||
+                        isProcessing ||
+                        isPlayingVoice) && (
                         <Text
-                          white
+                          color={
+                            isRecording
+                              ? '#EA0606'
+                              : '#FFFFFF'
+                          }
                           size={(sizes.s - 1) * 2}
                           semibold
                           numberOfLines={1}
@@ -981,29 +1002,51 @@ const PracticeSession = () => {
                             ? 'Registrando…'
                             : isProcessing
                             ? 'Analisi in corso...'
-                            : isPlayingVoice
-                            ? 'Riproduzione feedback...'
-                            : 'Tocca'}
+                            : 'Riproduzione feedback...'}
                         </Text>
-                      </View>
-                    </Block>
+                      )}
+                    </View>
                   </Button>
                 </View>
               </View>
 
+              {/* Ejemplo dinámico - Solo visual, NO interactivo */}
+              {expectedUserSample && !isRecording && !isProcessing && (
+                <Block align="center" marginTop={sizes.xs}>
+                  <Block
+                    style={{
+                      paddingHorizontal: sizes.sm,
+                      paddingVertical: sizes.xs,
+                      backgroundColor: 'transparent',
+                      borderRadius: 0,
+                      borderWidth: 0,
+                      maxWidth: '100%',
+                    }}>
+                    <Text
+                      bold
+                      size={sizes.p - 3}
+                      color="#17C1E8"
+                      center
+                      style={{
+                        marginBottom: 2,
+                      }}>
+                      💬 Devi rispondere:
+                    </Text>
+                    <Text
+                      white
+                      size={sizes.p - 2}
+                      center
+                      style={{
+                        lineHeight: (sizes.p - 2) * 1.3,
+                      }}>
+                      {expectedUserSample}
+                    </Text>
+                  </Block>
+                </Block>
+              )}
+
               {/* Botones de acción */}
               <Block row justify="center" marginTop={sizes.xs}>
-                <BrandActionButton
-                  label="PROSSIMO TURNO"
-                  onPress={goToNextInterviewSentence}
-                  disabled={
-                    isRecording ||
-                    isProcessing ||
-                    isPlayingVoice ||
-                    conversationPairs.length === 0
-                  }
-                  style={{flex: 1, maxWidth: 200, marginRight: sizes.xs}}
-                />
                 {analysisSummary && (
                   <BrandActionButton
                     label={isPlayingVoice ? 'Riproduzione...' : 'Feedback'}
