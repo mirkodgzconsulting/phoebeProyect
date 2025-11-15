@@ -59,8 +59,8 @@ const AssistantOrb = ({state = 'idle', size = 140}: AssistantOrbProps) => {
   useEffect(() => {
     logoScale.value = withRepeat(
       withSequence(
-        withTiming(1.06, {duration: 1400, easing: Easing.inOut(Easing.quad)}),
-        withTiming(0.96, {duration: 1400, easing: Easing.inOut(Easing.quad)}),
+        withTiming(1.08, {duration: 1400, easing: Easing.inOut(Easing.quad)}),
+        withTiming(0.94, {duration: 1400, easing: Easing.inOut(Easing.quad)}),
       ),
       -1,
       true,
@@ -68,8 +68,8 @@ const AssistantOrb = ({state = 'idle', size = 140}: AssistantOrbProps) => {
 
     glowOpacity.value = withRepeat(
       withSequence(
-        withTiming(0.85, {duration: 1600, easing: Easing.inOut(Easing.quad)}),
-        withTiming(0.35, {duration: 1600, easing: Easing.inOut(Easing.quad)}),
+        withTiming(0.9, {duration: 1600, easing: Easing.inOut(Easing.quad)}),
+        withTiming(0.4, {duration: 1600, easing: Easing.inOut(Easing.quad)}),
       ),
       -1,
       true,
@@ -213,11 +213,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: 'rgba(0,0,0,0.45)',
-    shadowOpacity: 0.35,
-    shadowOffset: {width: 0, height: 8},
-    shadowRadius: 18,
-    elevation: 6,
+    shadowColor: 'rgba(96,203,88,0.6)',
+    shadowOpacity: 0.5,
+    shadowOffset: {width: 0, height: 10},
+    shadowRadius: 24,
+    elevation: 8,
   },
   gradient: {
     ...StyleSheet.absoluteFillObject,
@@ -227,18 +227,18 @@ const styles = StyleSheet.create({
     width: '78%',
     height: '78%',
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   logoAura: {
     position: 'absolute',
     width: '82%',
     height: '82%',
     borderRadius: 999,
-    backgroundColor: 'rgba(96,203,88,0.28)',
-    shadowColor: 'rgba(96,203,88,0.8)',
-    shadowOpacity: 0.5,
+    backgroundColor: 'rgba(96,203,88,0.35)',
+    shadowColor: 'rgba(96,203,88,0.9)',
+    shadowOpacity: 0.6,
     shadowOffset: {width: 0, height: 0},
-    shadowRadius: 16,
+    shadowRadius: 20,
   },
   ringWrapper: {
     position: 'absolute',

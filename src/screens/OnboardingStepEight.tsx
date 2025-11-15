@@ -89,16 +89,16 @@ const OnboardingStepEight = () => {
         color="transparent"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}>
-        <Block align="center" marginBottom={sizes.m}>
-          <AssistantOrb size={132} state="idle" />
+        <Block align="center" marginBottom={0}>
+            <AssistantOrb size={160} state="idle" />
         </Block>
 
-        <Block align="center" marginHorizontal={sizes.sm} marginBottom={sizes.m}>
-          <Text h4 center white marginBottom={sizes.xs}>
+        <Block align="center" marginHorizontal={sizes.sm} marginBottom={0}>
+          <Text h5 center white marginBottom={0}>
             Scegli il tuo Tutor IA
           </Text>
-          <Text center size={sizes.s} color="rgba(255,255,255,0.76)">
-            Seleziona il tutor che vuoi utilizzare nell’app. Potrai cambiarlo in qualsiasi momento.
+          <Text center size={sizes.text} color="rgba(255,255,255,0.76)" marginTop={0}>
+            Seleziona il tutor che vuoi utilizzare nell'app. Potrai cambiarlo in qualsiasi momento.
           </Text>
         </Block>
 

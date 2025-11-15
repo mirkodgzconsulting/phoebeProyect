@@ -116,22 +116,23 @@ const Onboarding = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}>
           {/* Avatar */}
-          <Block align="center" marginBottom={sizes.m}>
-            <AssistantOrb size={132} state="idle" />
+          <Block align="center" marginBottom={0}>
+            <AssistantOrb size={160} state="idle" />
           </Block>
 
           {/* Título y subtítulo */}
           <Block
             align="center"
             marginHorizontal={sizes.sm}
-            marginBottom={sizes.m}>
-            <Text h4 center white marginBottom={sizes.xs}>
+            marginBottom={0}>
+            <Text h5 center white marginBottom={0}>
               Perché vuoi imparare l'inglese?
             </Text>
             <Text
               center
-              size={sizes.s}
-              color="rgba(255,255,255,0.76)">
+              size={sizes.text}
+              color="rgba(255,255,255,0.76)"
+              marginTop={0}>
               Personalizziamo il tuo piano in base ai tuoi obiettivi.
             </Text>
           </Block>

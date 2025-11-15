@@ -116,18 +116,18 @@ const OnboardingStepFour = () => {
         color="transparent"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}>
-        <Block align="center" marginBottom={sizes.m}>
-          <AssistantOrb size={132} state="idle" />
+        <Block align="center" marginBottom={0}>
+            <AssistantOrb size={160} state="idle" />
         </Block>
 
         <Block
           align="center"
           marginHorizontal={sizes.sm}
-          marginBottom={sizes.m}>
-          <Text h4 center white marginBottom={sizes.xs}>
+          marginBottom={0}>
+          <Text h5 center white marginBottom={0}>
             Come preferisci imparare?
           </Text>
-          <Text center size={sizes.s} color="rgba(255,255,255,0.76)">
+          <Text center size={sizes.text} color="rgba(255,255,255,0.76)" marginTop={0}>
             Scegli il metodo che ti aiuta di più.
           </Text>
         </Block>
@@ -166,13 +166,6 @@ const OnboardingStepFour = () => {
                   </View>
                   <Text center white semibold size={sizes.p - 1}>
                     {option.label}
-                  </Text>
-                  <Text
-                    center
-                    size={sizes.s - 1}
-                    color="rgba(255,255,255,0.72)"
-                    marginTop={4}>
-                    {option.description}
                   </Text>
                 </LinearGradient>
               </Pressable>

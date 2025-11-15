@@ -145,18 +145,18 @@ const OnboardingStepFive = () => {
         color="transparent"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}>
-        <Block align="center" marginBottom={sizes.m}>
-          <AssistantOrb size={132} state="idle" />
+        <Block align="center" marginBottom={0}>
+            <AssistantOrb size={160} state="idle" />
         </Block>
 
         <Block
           align="center"
           marginHorizontal={sizes.sm}
-          marginBottom={sizes.m}>
-          <Text h4 center white marginBottom={sizes.xs}>
-            Cosa ti rende più difficile raggiungere il tuo obiettivo con l’inglese?
+          marginBottom={0}>
+          <Text h5 center white marginBottom={0}>
+            Cosa ti rende più difficile raggiungere il tuo obiettivo con l'inglese?
           </Text>
-          <Text center size={sizes.s} color="rgba(255,255,255,0.76)">
+          <Text center size={sizes.text} color="rgba(255,255,255,0.76)" marginTop={0}>
             Conoscere i tuoi ostacoli ci aiuta a creare un percorso su misura per te.
           </Text>
         </Block>

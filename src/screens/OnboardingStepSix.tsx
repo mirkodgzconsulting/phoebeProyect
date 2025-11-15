@@ -98,18 +98,18 @@ const OnboardingStepSix = () => {
         color="transparent"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}>
-        <Block align="center" marginBottom={sizes.m}>
-          <AssistantOrb size={132} state="idle" />
+        <Block align="center" marginBottom={0}>
+            <AssistantOrb size={160} state="idle" />
         </Block>
 
         <Block
           align="center"
           marginHorizontal={sizes.sm}
-          marginBottom={sizes.m}>
-          <Text h4 center white marginBottom={sizes.xs}>
-            Quanto tempo vuoi dedicare all’inglese ogni giorno?
+          marginBottom={0}>
+          <Text h5 center white marginBottom={0}>
+            Quanto tempo vuoi dedicare all'inglese ogni giorno?
           </Text>
-          <Text center size={sizes.s} color="rgba(255,255,255,0.76)">
+          <Text center size={sizes.text} color="rgba(255,255,255,0.76)" marginTop={0}>
             Ti aiuteremo a costruire una routine realistica.
           </Text>
         </Block>

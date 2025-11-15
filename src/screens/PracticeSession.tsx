@@ -704,15 +704,6 @@ const PracticeSession = () => {
                   : 'Tocca per parlare'}
               </Text>
 
-              {/* Estado del micrófono */}
-              <Text
-                center
-                color="rgba(255,255,255,0.7)"
-                size={sizes.p - 1}
-                marginTop={sizes.xs}>
-                {micStatusLabel}
-              </Text>
-
               {/* Barra de progreso - DELGADA, DEBAJO DEL ESTADO */}
               <Block
                 style={{
@@ -834,7 +825,7 @@ const PracticeSession = () => {
                     size={sizes.p - 2}
                     marginBottom={sizes.xs}
                     center>
-                    Risposta di esempio
+                    Tua risposta
                   </Text>
                   <Text
                     color="rgba(255,255,255,0.9)"
